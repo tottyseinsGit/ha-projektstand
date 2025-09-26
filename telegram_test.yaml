@@ -1,0 +1,38 @@
+# /config/packages/telegram_test.yaml
+# Test für Telegram (UI-basierte Integration)
+# Voraussetzung: Integration "Telegram bot" ist eingerichtet UND deine Chat-ID ist in der Integration erlaubt.
+
+script:
+  telegram_test_message:
+    alias: "Telegram – Testnachricht senden"
+    mode: single
+    sequence:
+      - service: telegram_bot.send_message
+        data:
+          # Falls du deine Chat-ID als Secret hinterlegt hast (empfohlen):
+          target:
+            - !secret telegram_chat_id
+          # Alternativ ohne target: sendet an den ersten erlaubten Chat der Integration
+          # message:
+          message: >
+            ✅ *HA Test*
+            Gesendet: {{ now().strftime('%d.%m.%Y %H:%M') }}
+          parse_mode: markdown
+
+automation:
+  # Optional: Sende 1x beim Start von Home Assistant eine Test-Nachricht
+  - id: telegram_test_on_start
+    alias: "Telegram – Test bei HA-Start"
+    mode: single
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service: telegram_bot.send_message
+        data:
+          target:
+            - !secret telegram_chat_id
+          message: >
+            🚀 *Home Assistant gestartet*
+            Zeit: {{ now().strftime('%d.%m.%Y %H:%M') }}
+          parse_mode: markdown

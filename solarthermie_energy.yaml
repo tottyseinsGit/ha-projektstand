@@ -1,0 +1,27 @@
+# /config/packages/solarthermie_energy.yaml
+
+# 2.1) Automatische Zähler für Tag / Monat / Jahr aus dem monot. Zähler:
+utility_meter:
+  solarthermie_energy_day_v3:
+    source: sensor.wmz_total_kwh
+    cycle: daily
+
+  solarthermie_energy_month_v3:
+    source: sensor.wmz_total_kwh
+    cycle: monthly
+
+  solarthermie_energy_year_v3:
+    source: sensor.wmz_total_kwh
+    cycle: yearly
+
+# 2.2) YTD (Jahresverbrauch bis heute) direkt aus Payload-Werten:
+template:
+  - sensor:
+      - name: solarthermie_energy_ytd
+        unique_id: solarthermie_energy_ytd_v3
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: >
+          {{ (states('sensor.wmz_total_kwh') | float(0)
+            - states('sensor.wmz_target_kwh') | float(0)) | round(3) }}

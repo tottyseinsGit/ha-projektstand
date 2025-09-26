@@ -1,0 +1,345 @@
+# /config/packages/31_zaehler_whg04.yaml
+# Zähler & Eichfristen – WHG04 (mit ZWEI Kaltwasserzählern)
+
+input_text:
+  # --- Kaltwasser Zähler 1 ---
+  whg04_wasser_kalt1_meter_id:
+    name: "WHG04 – KW1: Meter-ID"
+    max: 32
+  whg04_wasser_kalt1_meter_key:
+    name: "WHG04 – KW1: Meter-Key (HEX)"
+    max: 64
+  whg04_wasser_kalt1_hersteller:
+    name: "WHG04 – KW1: Hersteller/Typ"
+    max: 80
+  whg04_wasser_kalt1_standort:
+    name: "WHG04 – KW1: Standort"
+    max: 80
+
+  # --- Kaltwasser Zähler 2 ---
+  whg04_wasser_kalt2_meter_id:
+    name: "WHG04 – KW2: Meter-ID"
+    max: 32
+  whg04_wasser_kalt2_meter_key:
+    name: "WHG04 – KW2: Meter-Key (HEX)"
+    max: 64
+  whg04_wasser_kalt2_hersteller:
+    name: "WHG04 – KW2: Hersteller/Typ"
+    max: 80
+  whg04_wasser_kalt2_standort:
+    name: "WHG04 – KW2: Standort"
+    max: 80
+
+  # --- Warmwasser ---
+  whg04_wasser_warm_meter_id:
+    name: "WHG04 – WW: Meter-ID"
+    max: 32
+  whg04_wasser_warm_meter_key:
+    name: "WHG04 – WW: Meter-Key (HEX)"
+    max: 64
+  whg04_wasser_warm_hersteller:
+    name: "WHG04 – WW: Hersteller/Typ"
+    max: 80
+  whg04_wasser_warm_standort:
+    name: "WHG04 – WW: Standort"
+    max: 80
+
+  # --- Wärmemengenzähler (WMZ) ---
+  whg04_wmz_meter_id:
+    name: "WHG04 – WMZ: Meter-ID"
+    max: 32
+  whg04_wmz_meter_key:
+    name: "WHG04 – WMZ: Meter-Key (HEX)"
+    max: 64
+  whg04_wmz_hersteller:
+    name: "WHG04 – WMZ: Hersteller/Typ"
+    max: 80
+  whg04_wmz_standort:
+    name: "WHG04 – WMZ: Standort"
+    max: 80
+
+  # --- Strom ---
+  whg04_strom_meter_id:
+    name: "WHG04 – Strom: Zählernummer/ID"
+    max: 32
+  whg04_strom_meter_key:
+    name: "WHG04 – Strom: Schlüssel (optional)"
+    max: 64
+  whg04_strom_hersteller:
+    name: "WHG04 – Strom: Hersteller/Typ"
+    max: 80
+  whg04_strom_standort:
+    name: "WHG04 – Strom: Standort"
+    max: 80
+
+input_number:
+  # --- Eichfristen in Jahren ---
+  whg04_kw1_eichfrist_jahre:
+    name: "WHG04 – KW1: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg04_kw2_eichfrist_jahre:
+    name: "WHG04 – KW2: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg04_ww_eichfrist_jahre:
+    name: "WHG04 – WW: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg04_wmz_eichfrist_jahre:
+    name: "WHG04 – WMZ: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg04_strom_eichfrist_jahre:
+    name: "WHG04 – Strom: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 8
+
+input_datetime:
+  # --- Montage-Daten ---
+  whg04_wasser_kalt1_montage:
+    name: "WHG04 – KW1: Montage"
+    has_date: true
+    has_time: false
+  whg04_wasser_kalt2_montage:
+    name: "WHG04 – KW2: Montage"
+    has_date: true
+    has_time: false
+  whg04_wasser_warm_montage:
+    name: "WHG04 – WW: Montage"
+    has_date: true
+    has_time: false
+  whg04_wmz_montage:
+    name: "WHG04 – WMZ: Montage"
+    has_date: true
+    has_time: false
+  whg04_strom_montage:
+    name: "WHG04 – Strom: Montage"
+    has_date: true
+    has_time: false
+
+# === WHG04 – STROM (MQTT vom ZGW16-IP) ======================================
+# HINWEIS: Falls WHG04 nicht "devices/1" ist, den Index in den Topics anpassen.
+mqtt:
+  sensor:
+    # ---- Energie gesamt (kWh, monoton steigend) ----
+    - name: "whg04_strom_kwh_total"
+      unique_id: whg04_strom_kwh_total
+      state_topic: "ZGW16-IP/devices/1/Total_imported_active_energy"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:lightning-bolt
+
+    # ---- Wirkleistung (W) ----
+    - name: "whg04_strom_power_w"
+      unique_id: whg04_strom_power_w
+      state_topic: "ZGW16-IP/devices/1/Total_active_power"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:flash
+
+    # ---- Ströme je Phase (A) ----
+    - name: "whg04_strom_l1_current_a"
+      unique_id: whg04_strom_l1_current_a
+      state_topic: "ZGW16-IP/devices/1/L1_Current"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+    - name: "whg04_strom_l2_current_a"
+      unique_id: whg04_strom_l2_current_a
+      state_topic: "ZGW16-IP/devices/1/L2_Current"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+    - name: "whg04_strom_l3_current_a"
+      unique_id: whg04_strom_l3_current_a
+      state_topic: "ZGW16-IP/devices/1/L3_Current"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+
+    # ---- Spannungen je Phase (V) ----
+    - name: "whg04_strom_l1_voltage_v"
+      unique_id: whg04_strom_l1_voltage_v
+      state_topic: "ZGW16-IP/devices/1/Voltage_of_L1_to_N"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+    - name: "whg04_strom_l2_voltage_v"
+      unique_id: whg04_strom_l2_voltage_v
+      state_topic: "ZGW16-IP/devices/1/Voltage_of_L2_to_N"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+    - name: "whg04_strom_l3_voltage_v"
+      unique_id: whg04_strom_l3_voltage_v
+      state_topic: "ZGW16-IP/devices/1/Voltage_of_L3_to_N"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+
+    # ---- Seriennummer (Info) ----
+    - name: "whg04_strom_meter_serial"
+      unique_id: whg04_strom_meter_serial
+      state_topic: "ZGW16-IP/devices/1/Serial_number"
+      value_template: "{{ value_json.value | string }}"
+      icon: mdi:numeric
+
+# Zählerstände aus dem Total (HA Utility Meter)
+utility_meter:
+  whg04_strom_kwh_day:
+    name: "WHG04 – Strom kWh heute"
+    source: sensor.whg04_strom_kwh_total
+    cycle: daily
+  whg04_strom_kwh_month_2025:
+    name: "WHG04 – Strom kWh Monat 2025"
+    source: sensor.whg04_strom_kwh_total
+    cycle: monthly
+  whg04_strom_kwh_year_2025:
+    name: "WHG04 – Strom kWh Jahr 2025"
+    source: sensor.whg04_strom_kwh_total
+    cycle: yearly
+
+template:
+  - sensor:
+      # --- Ablauf: KW1 ---
+      - name: whg04_kw1_eich_ablauf
+        unique_id: whg04_kw1_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set inst = states('input_datetime.whg04_wasser_kalt1_montage') %}
+          {% set years = states('input_number.whg04_kw1_eichfrist_jahre')|int(6) %}
+          {% if inst not in ['unknown','unavailable',''] and years > 0 %}
+            {% set base = as_datetime(inst).date() %}
+            {% set tgt = base.replace(year=base.year + years) %}
+            {{ as_timestamp(as_datetime(tgt)) | timestamp_local }}
+          {% else %} {{ none }} {% endif %}
+
+      # --- Ablauf: KW2 ---
+      - name: whg04_kw2_eich_ablauf
+        unique_id: whg04_kw2_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set inst = states('input_datetime.whg04_wasser_kalt2_montage') %}
+          {% set years = states('input_number.whg04_kw2_eichfrist_jahre')|int(6) %}
+          {% if inst not in ['unknown','unavailable',''] and years > 0 %}
+            {% set base = as_datetime(inst).date() %}
+            {% set tgt = base.replace(year=base.year + years) %}
+            {{ as_timestamp(as_datetime(tgt)) | timestamp_local }}
+          {% else %} {{ none }} {% endif %}
+
+      # --- Aggregiert: „KW gesamt“ (frühestes Ablaufdatum von KW1/KW2) ---
+      - name: whg04_kw_eich_ablauf
+        unique_id: whg04_kw_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set s1 = states('sensor.whg04_kw1_eich_ablauf') %}
+          {% set s2 = states('sensor.whg04_kw2_eich_ablauf') %}
+          {% set v1 = (s1 not in ['unknown','unavailable','']) %}
+          {% set v2 = (s2 not in ['unknown','unavailable','']) %}
+          {% if v1 and v2 %}
+            {{ [as_datetime(s1), as_datetime(s2)] | min | as_timestamp | timestamp_local }}
+          {% elif v1 %}
+            {{ s1 }}
+          {% elif v2 %}
+            {{ s2 }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      # --- Ablauf: WW ---
+      - name: whg04_ww_eich_ablauf
+        unique_id: whg04_ww_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set inst = states('input_datetime.whg04_wasser_warm_montage') %}
+          {% set years = states('input_number.whg04_ww_eichfrist_jahre')|int(6) %}
+          {% if inst not in ['unknown','unavailable',''] and years > 0 %}
+            {% set base = as_datetime(inst).date() %}
+            {% set tgt = base.replace(year=base.year + years) %}
+            {{ as_timestamp(as_datetime(tgt)) | timestamp_local }}
+          {% else %} {{ none }} {% endif %}
+
+      # --- Ablauf: WMZ ---
+      - name: whg04_wmz_eich_ablauf
+        unique_id: whg04_wmz_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set inst = states('input_datetime.whg04_wmz_montage') %}
+          {% set years = states('input_number.whg04_wmz_eichfrist_jahre')|int(6) %}
+          {% if inst not in ['unknown','unavailable',''] and years > 0 %}
+            {% set base = as_datetime(inst).date() %}
+            {% set tgt = base.replace(year=base.year + years) %}
+            {{ as_timestamp(as_datetime(tgt)) | timestamp_local }}
+          {% else %} {{ none }} {% endif %}
+
+      # --- Ablauf: Strom ---
+      - name: whg04_strom_eich_ablauf
+        unique_id: whg04_strom_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set inst = states('input_datetime.whg04_strom_montage') %}
+          {% set years = states('input_number.whg04_strom_eichfrist_jahre')|int(8) %}
+          {% if inst not in ['unknown','unavailable',''] and years > 0 %}
+            {% set base = as_datetime(inst).date() %}
+            {% set tgt = base.replace(year=base.year + years) %}
+            {{ as_timestamp(as_datetime(tgt)) | timestamp_local }}
+          {% else %} {{ none }} {% endif %}
+
+      # --- Effektive Strom-Zähler-ID (MQTT bevorzugt, sonst manuell) ---
+      - name: "WHG04 – Strom: Zähler-ID (effektiv)"
+        unique_id: whg04_strom_meter_id_effektiv
+        state: >-
+          {% set mqtt = states('sensor.whg04_strom_meter_serial') %}
+          {% set man  = states('input_text.whg04_strom_meter_id') %}
+          {% set mqtt_ok = mqtt not in ['unknown','unavailable','','none'] %}
+          {% set man_ok  = man  not in ['unknown','unavailable','','none'] %}
+          {% if mqtt_ok %}{{ mqtt | string }}
+          {% elif man_ok %}{{ man }}
+          {% else %}{{ none }}{% endif %}
+        attributes:
+          quelle: >-
+            {% set mqtt = states('sensor.whg04_strom_meter_serial') %}
+            {{ 'mqtt' if mqtt not in ['unknown','unavailable','','none'] else 'manuell' }}
+          mqtt_roh: "{{ states('sensor.whg04_strom_meter_serial') }}"
+          manuell:  "{{ states('input_text.whg04_strom_meter_id') }}"
+
+  - binary_sensor:
+      # Warnung, wenn MQTT-ID und manuelle ID belegt sind, aber nicht matchen
+      - name: "WHG04 – Strom: Zähler-ID Konflikt"
+        unique_id: whg04_strom_meter_id_konflikt
+        device_class: problem
+        state: >-
+          {% set mqtt = states('sensor.whg04_strom_meter_serial') %}
+          {% set man  = states('input_text.whg04_strom_meter_id') %}
+          {% set mqtt_ok = mqtt not in ['unknown','unavailable','','none'] %}
+          {% set man_ok  = man  not in ['unknown','unavailable','','none'] %}
+          {{ mqtt_ok and man_ok and (mqtt | string) != (man | string) }}
+        attributes:
+          mqtt: "{{ states('sensor.whg04_strom_meter_serial') }}"
+          manuell: "{{ states('input_text.whg04_strom_meter_id') }}"

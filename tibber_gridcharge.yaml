@@ -1,0 +1,194 @@
+# /config/packages/gridcharge_epex_services.yaml
+#
+# Grid-Charge mit EPEX-Services (ohne Attribut-Parsing)
+# - Plant TÄGLICH 00:02 das günstigste Ladefenster für HEUTE
+# - Ermittelt Abend-Peak (18–22 Uhr) und berechnet Schwelle = Peak*0.90 − 0.0783
+# - Schaltet input_boolean.strom_gridcharge_request, wenn JETZT im Fenster und Preis ≤ Schwelle
+#
+# Voraussetzungen:
+#   - EPEX-Integration mit Services epex_spot.get_lowest_price_interval / get_highest_price_interval
+#   - Preis-Sensor: sensor.epex_spot_data_net_price (Fallback: sensor.epex_spot_data_price)
+
+input_boolean:
+  strom_gridcharge_enable:
+    name: "GridCharge – aktiv"
+    icon: mdi:battery-charging
+    initial: true
+  strom_gridcharge_request:
+    name: "GridCharge – Ladefreigabe (Request)"
+    icon: mdi:battery-arrow-down
+
+input_number:
+  gridcharge_hours:
+    name: "GridCharge – Blockdauer (h)"
+    min: 1
+    max: 8
+    step: 1
+    initial: 3
+    unit_of_measurement: "h"
+  gridcharge_peak_price_eur_kwh:
+    name: "GridCharge – Peakpreis heute [€/kWh]"
+    min: 0
+    max: 2
+    step: 0.0001
+    mode: box
+  gridcharge_threshold_eur_kwh:
+    name: "GridCharge – Schwelle [€/kWh]"
+    min: 0
+    max: 2
+    step: 0.0001
+    mode: box
+
+input_datetime:
+  gridcharge_window_start:
+    name: "GridCharge – Start (heute)"
+    has_time: true
+    has_date: false
+  gridcharge_window_end:
+    name: "GridCharge – Ende (heute)"
+    has_time: true
+    has_date: false
+
+template:
+  - sensor:
+      # Aktueller Preis (bevorzugt Net Price)
+      - name: "strom_price_now_eur_kwh"
+        unique_id: strom_price_now_eur_kwh
+        unit_of_measurement: "€/kWh"
+        device_class: monetary
+        state_class: measurement
+        state: >
+          {% set s1 = states('sensor.epex_spot_data_net_price') %}
+          {% set s2 = states('sensor.epex_spot_data_price') %}
+          {{ (s1 if s1 not in ['unknown','unavailable',''] else s2) | replace(',', '.') | float(0) }}
+
+      # Binär: im geplanten Zeitfenster?
+      - name: "gridcharge_in_window_now"
+        unique_id: gridcharge_in_window_now
+        state: >
+          {% set nowt = now().time() %}
+          {% set s = states('input_datetime.gridcharge_window_start') %}
+          {% set e = states('input_datetime.gridcharge_window_end') %}
+          {{ s != none and e != none and s <= nowt|string <= e }}
+        attributes:
+          start: "{{ states('input_datetime.gridcharge_window_start') }}"
+          end: "{{ states('input_datetime.gridcharge_window_end') }}"
+
+      # Binär: wirtschaftlich? (Preis ≤ Schwelle)
+      - name: "gridcharge_profitable_now"
+        unique_id: gridcharge_profitable_now
+        state: >
+          {% set price = states('sensor.strom_price_now_eur_kwh') | float(999) %}
+          {% set thr   = states('input_number.gridcharge_threshold_eur_kwh') | float(0) %}
+          {{ price <= thr }}
+        attributes:
+          price_now: "{{ states('sensor.strom_price_now_eur_kwh') }}"
+          threshold: "{{ states('input_number.gridcharge_threshold_eur_kwh') }}"
+
+      # Gesamtschalter: jetzt laden?
+      - name: "gridcharge_should_charge"
+        unique_id: gridcharge_should_charge
+        state: >
+          {{ is_state('input_boolean.strom_gridcharge_enable','on')
+             and is_state('sensor.gridcharge_in_window_now','on')
+             and is_state('sensor.gridcharge_profitable_now','on') }}
+
+automation:
+  # 1) TÄGLICH 00:02 → Günstigstes Ladefenster HEUTE (z.B. zwischen 09:00 und 17:00), Dauer = gridcharge_hours
+  - id: gridcharge_plan_today_lowest_block
+    alias: "GridCharge – HEUTE: günstigstes Fenster planen (00:02)"
+    mode: single
+    trigger:
+      - platform: time
+        at: "00:02:00"
+    action:
+      # Niedrigstes Preisintervall im Tagesfenster ermitteln
+      - service: epex_spot.get_lowest_price_interval
+        response_variable: low
+        data:
+          earliest_start: "09:00:00"
+          latest_end: "17:00:00"
+          duration:
+            hours: "{{ states('input_number.gridcharge_hours') | int }}"
+            minutes: 0
+      # Zeiten übernehmen (nur Uhrzeit in Helpers speichern)
+      - variables:
+          t_start: "{{ as_datetime(low.start).strftime('%H:%M:%S') if (low is defined and low.start is defined) else '10:00:00' }}"
+          t_end:   "{{ as_datetime(low.end).strftime('%H:%M:%S')   if (low is defined and low.end   is defined) else '13:00:00' }}"
+      - service: input_datetime.set_datetime
+        target: { entity_id: input_datetime.gridcharge_window_start }
+        data: { time: "{{ t_start }}" }
+      - service: input_datetime.set_datetime
+        target: { entity_id: input_datetime.gridcharge_window_end }
+        data: { time: "{{ t_end }}" }
+      - service: logbook.log
+        data:
+          name: "GridCharge"
+          message: "Heute günstigstes Fenster: {{ t_start }}–{{ t_end }} ({{ states('input_number.gridcharge_hours') | int }}h)."
+
+  # 2) TÄGLICH 00:03 → Abend-Peak (18–22 Uhr) ermitteln & Schwelle berechnen
+  - id: gridcharge_compute_threshold_today
+    alias: "GridCharge – HEUTE: Schwelle berechnen (00:03)"
+    mode: single
+    trigger:
+      - platform: time
+        at: "00:03:00"
+    action:
+      - service: epex_spot.get_highest_price_interval
+        response_variable: peak
+        data:
+          earliest_start: "18:00:00"
+          latest_end: "22:00:00"
+          duration:
+            hours: 1
+            minutes: 0
+      - variables:
+          # Versuch, Preis direkt aus Serviceantwort zu lesen; sonst Fallback auf vorhandenen Sensor
+          peak_price: >-
+            {% if peak is defined and peak.price is defined %}
+              {{ peak.price | float(0) }}
+            {% else %}
+              {{ states('sensor.epex_spot_data_highest_price') | float(0) }}
+            {% endif %}
+          eta: 0.90
+          wear: 0.0783
+          thr: "{{ (peak_price * eta - wear) | float }}"
+      - service: input_number.set_value
+        target: { entity_id: input_number.gridcharge_peak_price_eur_kwh }
+        data: { value: "{{ peak_price }}" }
+      - service: input_number.set_value
+        target: { entity_id: input_number.gridcharge_threshold_eur_kwh }
+        data: { value: "{{ thr | round(4) }}" }
+      - service: logbook.log
+        data:
+          name: "GridCharge"
+          message: "Peak heute: {{ peak_price | round(4) }} €/kWh → Schwelle {{ (peak_price*0.90-0.0783) | round(4) }} €/kWh."
+
+  # 3) Alle 5 min: Ladefreigabe setzen/räumen
+  - id: gridcharge_flag_5min
+    alias: "GridCharge – Ladefreigabe toggeln (alle 5 min)"
+    mode: restart
+    trigger:
+      - platform: time_pattern
+        minutes: "/5"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ is_state('sensor.gridcharge_should_charge','on') }}"
+            sequence:
+              - service: input_boolean.turn_on
+                target: { entity_id: input_boolean.strom_gridcharge_request }
+              - service: logbook.log
+                data:
+                  name: "GridCharge"
+                  message: >-
+                    Request EIN – Preis {{ states('sensor.strom_price_now_eur_kwh') }} ≤ Schwelle {{ states('input_number.gridcharge_threshold_eur_kwh') }},
+                    im Fenster {{ states('input_datetime.gridcharge_window_start') }}–{{ states('input_datetime.gridcharge_window_end') }}.
+        default:
+          - service: input_boolean.turn_off
+            target: { entity_id: input_boolean.strom_gridcharge_request }
+          - service: logbook.log
+            data:
+              name: "GridCharge"
+              message: "Request AUS – Bedingungen nicht erfüllt."

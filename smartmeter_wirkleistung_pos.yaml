@@ -1,0 +1,22 @@
+# /config/packages/smartmeter_wirkleistung_pos.yaml
+template:
+  - sensor:
+      - name: "Smart Meter – Wirkleistung positiv [W]"
+        unique_id: smart_meter_ts_65a_3_wirkleistung_pos_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        # Betrag -> immer positiv
+        state: >
+          {{ (states('sensor.smart_meter_ts_65a_3_wirkleistung') | float(0)) | abs }}
+        attributes:
+          source_entity: "sensor.smart_meter_ts_65a_3_wirkleistung"
+        availability: >
+          {{ states('sensor.smart_meter_ts_65a_3_wirkleistung') not in ['unknown','unavailable','none'] }}
+
+# Hinweis:
+# Wenn du statt Betrag lieber "nur positive Werte, sonst 0" willst (Erzeugung ausblenden),
+# dann nimm statt der state-Zeile oben:
+# state: >
+#   {% set v = states('sensor.smart_meter_ts_65a_3_wirkleistung') | float(0) %}
+#   {{ [v, 0] | max }}

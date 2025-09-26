@@ -1,0 +1,238 @@
+# /config/packages/whg01_kosten_fix.yaml
+#
+# Wohnung 01 – Verteilung fixer Betriebskosten (Jahr/Monat) gem. Vorgaben
+# - Strom Grundgebühr: über Haus-Sensor je Verteilstelle (Jahr) – WHG01 = 1 Verteilstelle
+# - Wasser/Abwasser/Müll/Versicherung/Grundsteuer/Wartung/Regenwasser: Anteil nach Wohnfläche
+# - Abrechnungsservice: gleichmäßig je Wohnung (hier: 4 Wohnungen; anpassbar über KONSTANTE_WOHNUNGEN)
+#
+# Benötigte Eingangs-Entities (müssen existieren):
+#   - sensor.haus_kosten_strom_grundgebuehr_je_verteilstelle_2025_eur_jahr
+#   - input_number.whg01_wohnflaeche_m2
+#   - input_number.haus_nutzflaeche_m2_gesamt
+#   - input_number.haus_betriebskosten_wasser_grundpreis_eur
+#   - input_number.haus_betriebskosten_abwasser_grundpreis_eur
+#   - input_number.haus_betriebskosten_muellabfuhr_eur
+#   - input_number.haus_kosten_gebaeudeversicherung_eur_jahr
+#   - input_number.haus_kosten_grundsteuer_eur_jahr
+#   - input_number.haus_betriebskosten_wartung_heizung_eur
+#   - input_number.haus_betriebskosten_abrechnungsservice_eur
+#   - input_number.haus_kosten_regenwasser_eur_jahr
+#
+template:
+  - sensor:
+      # ---------------------------
+      # Hilfswerte: Flächen-Anteil WHG01
+      # ---------------------------
+      - name: "WHG01 – Anteil Wohnfläche an Gesamtfläche"
+        unique_id: whg01_anteil_flaeche_ratio
+        unit_of_measurement: "%"
+        state: >
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ ((whg / ges) * 100) | round(2) if ges > 0 else 0 }}
+        attributes:
+          fraction: >
+            {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+            {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+            {{ (whg / ges) | round(6) if ges > 0 else 0 }}
+
+      # ---------------------------
+      # Strom Grundgebühr (Jahr/Monat)
+      # ---------------------------
+      - name: "WHG01 – Kosten Strom Grundgebühr [€/Jahr]"
+        unique_id: whg01_kosten_strom_grundgebuehr_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: "{{ states('sensor.haus_kosten_strom_grundgebuehr_je_verteilstelle_2025_eur_jahr') }}"
+      - name: "WHG01 – Kosten Strom Grundgebühr [€/Monat]"
+        unique_id: whg01_kosten_strom_grundgebuehr_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {{ (states('sensor.haus_kosten_strom_grundgebuehr_je_verteilstelle_2025_eur_jahr')|float(0) / 12) | round(2) }}
+
+      # ---------------------------
+      # Wasser Grundpreis (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Wasser Grundpreis [€/Jahr]"
+        unique_id: whg01_kosten_wasser_grundpreis_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_betriebskosten_wasser_grundpreis_eur')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Wasser Grundpreis [€/Monat]"
+        unique_id: whg01_kosten_wasser_grundpreis_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_wasser_grundpreis_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Abwasser Grundpreis (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Abwasser Grundpreis [€/Jahr]"
+        unique_id: whg01_kosten_abwasser_grundpreis_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_betriebskosten_abwasser_grundpreis_eur')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Abwasser Grundpreis [€/Monat]"
+        unique_id: whg01_kosten_abwasser_grundpreis_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_abwasser_grundpreis_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Müllabfuhr (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Müllabfuuh [€/Jahr]"
+        unique_id: whg01_kosten_muell_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_betriebskosten_muellabfuhr_eur')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Müllabfuhr [€/Monat]"
+        unique_id: whg01_kosten_muell_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_muell_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Gebäudeversicherung (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Gebäudeversicherung [€/Jahr]"
+        unique_id: whg01_kosten_gebaeudeversicherung_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_kosten_gebaeudeversicherung_eur_jahr')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Gebäudeversicherung [€/Monat]"
+        unique_id: whg01_kosten_gebaeudeversicherung_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_gebaeudeversicherung_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Grundsteuer (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Grundsteuer [€/Jahr]"
+        unique_id: whg01_kosten_grundsteuer_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_kosten_grundsteuer_eur_jahr')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Grundsteuer [€/Monat]"
+        unique_id: whg01_kosten_grundsteuer_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_grundsteuer_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Wartung Heizung (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Wartung Heizung [€/Jahr]"
+        unique_id: whg01_kosten_wartung_heizung_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_betriebskosten_wartung_heizung_eur')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Wartung Heizung [€/Monat]"
+        unique_id: whg01_kosten_wartung_heizung_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_wartung_heizung_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Abrechnungsservice (Jahr/Monat) – gleichmäßig
+      # ---------------------------
+      - name: "WHG01 – Kosten Abrechnungsservice [€/Jahr]"
+        unique_id: whg01_kosten_abrechnungsservice_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {# KONSTANTE_WOHNUNGEN: Anzahl Wohnungen im Haus #}
+          {% set KONSTANTE_WOHNUNGEN = 4 %}
+          {% set total = states('input_number.haus_betriebskosten_abrechnungsservice_eur')|float(0) %}
+          {{ (total / KONSTANTE_WOHNUNGEN) | round(2) if KONSTANTE_WOHNUNGEN > 0 else 0 }}
+      - name: "WHG01 – Kosten Abrechnungsservice [€/Monat]"
+        unique_id: whg01_kosten_abrechnungsservice_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_abrechnungsservice_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # Regenwasser (Jahr/Monat) – nach Wohnfläche
+      # ---------------------------
+      - name: "WHG01 – Kosten Regenwasser [€/Jahr]"
+        unique_id: whg01_kosten_regenwasser_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set total = states('input_number.haus_kosten_regenwasser_eur_jahr')|float(0) %}
+          {% set whg = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set ges = states('input_number.haus_nutzflaeche_m2_gesamt')|float(0) %}
+          {{ (total * whg / ges) | round(2) if ges > 0 else 0 }}
+      - name: "WHG01 – Kosten Regenwasser [€/Monat]"
+        unique_id: whg01_kosten_regenwasser_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set jahr = states('sensor.whg01_kosten_regenwasser_eur_jahr')|float(0) %}
+          {{ (jahr / 12) | round(2) }}
+
+      # ---------------------------
+      # SUMMEN (Jahr/Monat) – fixe Posten WHG01
+      # ---------------------------
+      - name: "WHG01 – Fixkosten gesamt [€/Jahr]"
+        unique_id: whg01_kosten_fix_summe_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {{ (
+            states('sensor.whg01_kosten_strom_grundgebuehr_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_wasser_grundpreis_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_abwasser_grundpreis_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_muell_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_gebaeudeversicherung_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_grundsteuer_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_wartung_heizung_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_abrechnungsservice_eur_jahr')|float(0) +
+            states('sensor.whg01_kosten_regenwasser_eur_jahr')|float(0)
+          ) | round(2) }}
+      - name: "WHG01 – Fixkosten gesamt [€/Monat]"
+        unique_id: whg01_kosten_fix_summe_eur_monat
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {{ (states('sensor.whg01_kosten_fix_summe_eur_jahr')|float(0) / 12) | round(2) }}

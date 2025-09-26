@@ -1,0 +1,95 @@
+# /config/packages/20_mieter_whg03.yaml
+# Mieterstammdaten – Wohnung 03 (zeitlos)
+
+input_text:
+  whg03_mieter_vorname:
+    name: "WHG03 – Vorname"
+    max: 64
+  whg03_mieter_nachname:
+    name: "WHG03 – Nachname"
+    max: 64
+  whg03_phone:
+    name: "WHG03 – Telefon"
+    max: 20
+  whg03_tenant_email:
+    name: "WHG03 – E-Mail"
+    max: 120
+  whg03_notizen:
+    name: "WHG03 – Notizen"
+    max: 240
+input_number:
+  whg03_wohnflaeche_m2:
+    name: "WHG03 – Wohnfläche [m²]"
+    min: 0
+    max: 1000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m²"
+  whg03_personen:
+    name: "WHG03 – Personen [Anzahl]"
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    unit_of_measurement: "Personen"
+
+  # Monats-Kosten
+  whg03_miete_kalt_eur_monat:
+    name: "WHG03 – Miete kalt [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg03_voraus_bk_eur_monat:
+    name: "WHG03 – Vorauszahlung Betriebskosten [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg03_voraus_hk_eur_monat:
+    name: "WHG03 – Vorauszahlung Heizung/WW [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg03_voraus_strom_eur_monat:
+    name: "WHG03 – Vorauszahlung Strom [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg03_voraus_ev_charger_eur_monat:
+    name: "WHG03 – Vorauszahlung EV-Charger [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg03_kaution_eur:
+    name: "WHG03 – Kaution [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+input_datetime:
+  whg03_einzug:
+    name: "WHG03 – Mietbeginn"
+    has_date: true
+    has_time: false
+  whg03_auszug:
+    name: "WHG03 – Mietende"
+    has_date: true
+    has_time: false
+
+input_boolean:
+  whg03_notify_verbrauch_monatlich:
+    name: "WHG03 – Monatsbenachrichtigung Verbrauch"
+  whg03_notify_enabled:
+    name: "WHG03 – Monatsbenachrichtigung Verbrauch"
+    icon: mdi:message-processing

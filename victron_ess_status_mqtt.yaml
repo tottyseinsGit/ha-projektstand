@@ -1,0 +1,56 @@
+# /config/packages/victron_ess_status_mqtt.yaml
+# Read-only Anzeige aus Node-RED → MQTT
+mqtt:
+  sensor:
+    # ESS-Modus (kommt bei dir bereits an)
+    - name: "victron_ess_mode_raw"
+      unique_id: victron_ess_mode_raw
+      state_topic: "victron/cerbo/settings/hub4mode"
+
+    - name: "victron_ess_mode"
+      unique_id: victron_ess_mode_text
+      state_topic: "victron/cerbo/settings/hub4mode"
+      value_template: >-
+        {% set m = value|int(-1) %}
+        {% set map = {
+          1: 'ESS mit Phasenkorr.',
+          2: 'ESS ohne Phasenkorr.',
+          3: 'External control'
+        } %}
+        {{ map.get(m, 'unbekannt (' ~ m ~ ')') }}
+
+    # NEU: BatteryLife SoC-Limit (kommt bei dir an)
+    - name: "victron_bl_soc_limit_percent"
+      unique_id: victron_bl_soc_limit_percent
+      state_topic: "victron/cerbo/settings/bl_soclimit"
+      unit_of_measurement: "%"
+      device_class: battery
+      state_class: measurement
+
+    - name: "victron_ess_ac_setpoint_l1_w"
+      unique_id: victron_ess_ac_setpoint_l1_w
+      state_topic: "victron/cerbo/ess/ac_setpoint/l1_w"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+
+    - name: "victron_ess_ac_setpoint_l2_w"
+      unique_id: victron_ess_ac_setpoint_l2_w
+      state_topic: "victron/cerbo/ess/ac_setpoint/l2_w"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+
+    - name: "victron_ess_ac_setpoint_l3_w"
+      unique_id: victron_ess_ac_setpoint_l3_w
+      state_topic: "victron/cerbo/ess/ac_setpoint/l3_w"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+
+    - name: "victron_ess_ac_setpoint_total_w"
+      unique_id: victron_ess_ac_setpoint_total_w
+      state_topic: "victron/cerbo/ess/ac_setpoint/total_w"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement  

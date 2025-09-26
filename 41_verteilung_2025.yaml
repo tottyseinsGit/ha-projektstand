@@ -1,0 +1,332 @@
+# /config/packages/41_verteilung_2025.yaml
+# Verteilung 2025 – Anteile Haus -> Wohnungen (WHG01..WHG04)
+
+template:
+  - sensor:
+      # --------------------
+      # Hilfssummen (Haus)
+      # --------------------
+      - name: summe_wohnflaeche_m2
+        unit_of_measurement: "m²"
+        state: >-
+          {{ (
+            states('input_number.whg01_wohnflaeche_m2')|float(0) +
+            states('input_number.whg02_wohnflaeche_m2')|float(0) +
+            states('input_number.whg03_wohnflaeche_m2')|float(0) +
+            states('input_number.whg04_wohnflaeche_m2')|float(0)
+          ) | round(2) }}
+
+      - name: summe_personen
+        state: >-
+          {{ (
+            states('input_number.whg01_personen')|int(0) +
+            states('input_number.whg02_personen')|int(0) +
+            states('input_number.whg03_personen')|int(0) +
+            states('input_number.whg04_personen')|int(0)
+          ) }}
+
+      # Strom-Grundgebühr je Verteilstelle (€/Jahr)
+      - name: strom_grundpreis_je_stelle_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set gp = states('input_number.haus_betriebskosten_strom_grundgebuehr_2025')|float(0) %}
+          {% set n  = states('input_number.haus_verteilstellen_anzahl')|int(0) %}
+          {% if n>0 %} {{ (gp / n) | round(2) }} {% else %} {{ none }} {% endif %}
+
+      # --------------------
+      # Aliase auf Haus-Gesamtkosten
+      # (Wasser/Abwasser kommen ggf. aus anderer Datei; Strom variabel aus 40_*)
+      # --------------------
+      - name: wasser_gesamt_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('sensor.haus_wasser_kosten_eur_2025')|float(0) }}"
+      - name: abwasser_gesamt_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('sensor.haus_abwasser_kosten_eur_2025')|float(0) }}"
+      - name: strom_variabel_gesamt_eur_2025
+        unit_of_measurement: "€"
+        # Nutzung des in 40_* berechneten variablen Anteils:
+        state: "{{ states('sensor.haus_allgemeinstrom_kosten_eur_2025')|float(0) }}"
+
+      # =====================================================================
+      # WHG01
+      # =====================================================================
+      # Wasser/Abwasser nach Personen
+      - name: whg01_wasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg01_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.wasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg01_abwasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg01_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.abwasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+
+      # Strom: variabler Anteil nach m²
+      - name: whg01_strom_variabel_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set m2  = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {% set tot = states('sensor.strom_variabel_gesamt_eur_2025')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+
+      # Strom-Grundpreis: 1 Verteilstelle je Wohnung
+      - name: whg01_strom_grundpreis_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('sensor.strom_grundpreis_je_stelle_eur_2025')|float(0) }}"
+
+      # Grundsteuer/Versicherung/Niederschlagswasser nach m², Müll nach Personen
+      - name: whg01_grundsteuer_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_grundsteuer_eur')|float(0) %}
+          {% set m2  = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg01_versicherung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_versicherung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg01_muell_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_muellabfuhr_eur')|float(0) %}
+          {% set p   = states('input_number.whg01_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg01_niederschlagswasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_niederschlagswasser_eur')|float(0) %}
+          {% set m2  = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg01_wartung_heizung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_wartung_heizung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg01_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg01_abrechnungsservice_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set KONSTANTE_WOHNUNGEN = 4 %}
+          {% set tot = states('input_number.haus_betriebskosten_abrechnungsservice_eur')|float(0) %}
+          {{ (tot / KONSTANTE_WOHNUNGEN) | round(2) if KONSTANTE_WOHNUNGEN>0 else 0 }}
+
+      # =====================================================================
+      # WHG02
+      # =====================================================================
+      - name: whg02_wasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg02_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.wasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_abwasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg02_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.abwasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_strom_variabel_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set m2  = states('input_number.whg02_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {% set tot = states('sensor.strom_variabel_gesamt_eur_2025')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_strom_grundpreis_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('sensor.strom_grundpreis_je_stelle_eur_2025')|float(0) }}"
+      - name: whg02_grundsteuer_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_grundsteuer_eur')|float(0) %}
+          {% set m2  = states('input_number.whg02_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_versicherung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_versicherung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg02_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_muell_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_muellabfuhr_eur')|float(0) %}
+          {% set p   = states('input_number.whg02_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_niederschlagswasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_niederschlagswasser_eur')|float(0) %}
+          {% set m2  = states('input_number.whg02_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_wartung_heizung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_wartung_heizung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg02_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg02_abrechnungsservice_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set KONSTANTE_WOHNUNGEN = 4 %}
+          {% set tot = states('input_number.haus_betriebskosten_abrechnungsservice_eur')|float(0) %}
+          {{ (tot / KONSTANTE_WOHNUNGEN) | round(2) if KONSTANTE_WOHNUNGEN>0 else 0 }}
+
+      # =====================================================================
+      # WHG03
+      # =====================================================================
+      - name: whg03_wasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg03_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.wasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_abwasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg03_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.abwasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_strom_variabel_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set m2  = states('input_number.whg03_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {% set tot = states('sensor.strom_variabel_gesamt_eur_2025')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_strom_grundpreis_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('sensor.strom_grundpreis_je_stelle_eur_2025')|float(0) }}"
+      - name: whg03_grundsteuer_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_grundsteuer_eur')|float(0) %}
+          {% set m2  = states('input_number.whg03_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_versicherung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_versicherung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg03_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_muell_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_muellabfuhr_eur')|float(0) %}
+          {% set p   = states('input_number.whg03_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_niederschlagswasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_niederschlagswasser_eur')|float(0) %}
+          {% set m2  = states('input_number.whg03_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_wartung_heizung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_wartung_heizung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg03_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg03_abrechnungsservice_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set KONSTANTE_WOHNUNGEN = 4 %}
+          {% set tot = states('input_number.haus_betriebskosten_abrechnungsservice_eur')|float(0) %}
+          {{ (tot / KONSTANTE_WOHNUNGEN) | round(2) if KONSTANTE_WOHNUNGEN>0 else 0 }}
+
+      # =====================================================================
+      # WHG04
+      # =====================================================================
+      - name: whg04_wasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg04_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.wasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_abwasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set p   = states('input_number.whg04_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {% set tot = states('sensor.abwasser_gesamt_eur_2025')|float(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_strom_variabel_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set m2  = states('input_number.whg04_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {% set tot = states('sensor.strom_variabel_gesamt_eur_2025')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_strom_grundpreis_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('sensor.strom_grundpreis_je_stelle_eur_2025')|float(0) }}"
+      - name: whg04_grundsteuer_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_grundsteuer_eur')|float(0) %}
+          {% set m2  = states('input_number.whg04_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_versicherung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_versicherung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg04_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_muell_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_muellabfuhr_eur')|float(0) %}
+          {% set p   = states('input_number.whg04_personen')|int(0) %}
+          {% set sum = states('sensor.summe_personen')|int(0) %}
+          {{ (tot * p / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_niederschlagswasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_niederschlagswasser_eur')|float(0) %}
+          {% set m2  = states('input_number.whg04_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_wartung_heizung_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set tot = states('input_number.haus_betriebskosten_wartung_heizung_eur')|float(0) %}
+          {% set m2  = states('input_number.whg04_wohnflaeche_m2')|float(0) %}
+          {% set sum = states('sensor.summe_wohnflaeche_m2')|float(0) %}
+          {{ (tot * m2 / sum) | round(2) if sum>0 else 0 }}
+      - name: whg04_abrechnungsservice_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set KONSTANTE_WOHNUNGEN = 4 %}
+          {% set tot = states('input_number.haus_betriebskosten_abrechnungsservice_eur')|float(0) %}
+          {{ (tot / KONSTANTE_WOHNUNGEN) | round(2) if KONSTANTE_WOHNUNGEN>0 else 0 }}

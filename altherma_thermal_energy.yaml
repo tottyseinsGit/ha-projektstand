@@ -1,0 +1,59 @@
+# /config/packages/altherma_thermal_energy.yaml
+
+template:
+  - sensor:
+      - name: "altherma_thermische_leistung_w"
+        unique_id: altherma_thermische_leistung_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        # Thermische Leistung P = 69.6 * Flow(L/min) * |ΔT|
+        # WP-AUS-Filter: wenn Pel < 100 W -> 0 W
+        state: >
+          {% set flow = state_attr('sensor.none_althermasensors','Durchflussmenge (l/min)') | string | replace(',', '.') | float(0) %}
+          {% set t_vl = state_attr('sensor.none_althermasensors','R1T-Wasser Vorlauftemp. nach dem Plattenwärmetauscher') | string | replace(',', '.') | float(0) %}
+          {% set t_rl = state_attr('sensor.none_althermasensors','R4T-Wasser Rücklauftemp. vor dem Plattenwärmetauscher') | string | replace(',', '.') | float(0) %}
+          {% set dt = (t_vl - t_rl) | float(0) %}
+          {% set pth = 69.6 * flow * (dt | abs) %}
+          {% set pel = states('sensor.keller_altherma_elektrische_leistung_w') | float(0) %}   {# <--- ggf. anpassen #}
+          {% set schwelle = 100 %}
+          {{ (pth if pel >= schwelle else 0) | round(0) }}
+        attributes:
+          friendly_name: "Thermische Leistung (berechnet) [W]"
+          delta_t_k: "{{ (state_attr('sensor.none_althermasensors','R1T-Wasser Vorlauftemp. nach dem Plattenwärmetauscher') | string | replace(',', '.') | float(0) - state_attr('sensor.none_althermasensors','R4T-Wasser Rücklauftemp. vor dem Plattenwärmetauscher') | string | replace(',', '.') | float(0)) | round(2) }}"
+          flow_l_min: "{{ state_attr('sensor.none_althermasensors','Durchflussmenge (l/min)') | string | replace(',', '.') | float(0) }}"
+          pel_w: "{{ states('sensor.keller_altherma_elektrische_leistung_w') | float(0) }}"
+          filter_schwelle_w: 100
+
+sensor:
+  # Integration: W -> kWh
+  - platform: integration
+    name: "altherma_thermische_energie_kwh"
+    source: sensor.altherma_thermische_leistung_w
+    method: trapezoidal
+    unit_prefix: k
+    round: 3
+
+  # 24h-Delta (rollend)
+  - platform: statistics
+    name: "altherma_thermische_energie_24h_kwh"
+    entity_id: sensor.altherma_thermische_energie_kwh
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 500
+    precision: 3
+
+utility_meter:
+  altherma_thermisch_heute:
+    name: "Thermische Energie heute [kWh]"
+    source: sensor.altherma_thermische_energie_kwh
+    cycle: daily
+  altherma_thermisch_monat:
+    name: "Thermische Energie Monat [kWh]"
+    source: sensor.altherma_thermische_energie_kwh
+    cycle: monthly
+  altherma_thermisch_jahr:
+    name: "Thermische Energie Jahr [kWh]"
+    source: sensor.altherma_thermische_energie_kwh
+    cycle: yearly

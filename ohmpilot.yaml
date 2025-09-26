@@ -1,0 +1,92 @@
+# /config/packages/ohmpilot.yaml
+# Quelle NUR: sensor.ohmpilot_verbrauchte_energie (Wh, total_increasing)
+# -> utility_meter (Wh) für Heute/Monat/Jahr
+# -> statistics (Wh) für rollende 24h
+# -> Templates (kWh) für saubere Anzeige/Dashboard
+
+########################################
+# 24h-Delta (rollend) direkt auf Wh-Zähler
+########################################
+sensor:
+  - platform: statistics
+    name: "Ohmpilot Energie 24h (Wh)"
+    entity_id: sensor.ohmpilot_verbrauchte_energie
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 1000
+    precision: 3
+
+########################################
+# Tages / Monats / Jahres-Zähler (Wh)
+########################################
+utility_meter:
+  ohmpilot_energy_today_wh:
+    name: "Ohmpilot Energie heute (Wh)"
+    source: sensor.ohmpilot_verbrauchte_energie
+    cycle: daily
+
+  ohmpilot_energy_month_wh:
+    name: "Ohmpilot Energie Monat (Wh)"
+    source: sensor.ohmpilot_verbrauchte_energie
+    cycle: monthly
+
+  ohmpilot_energy_year_wh:
+    name: "Ohmpilot Energie Jahr (Wh)"
+    source: sensor.ohmpilot_verbrauchte_energie
+    cycle: yearly
+
+########################################
+# Lesbare kWh-Sensoren (nur Anzeige)
+########################################
+template:
+  - sensor:
+      # Gesamt in kWh (nur zur Kontrolle)
+      - name: "Ohmpilot Gesamt (kWh)"
+        unique_id: ohmpilot_total_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ (states('sensor.ohmpilot_verbrauchte_energie') | float(0) / 1000) | round(3) }}"
+        availability: >
+          {{ states('sensor.ohmpilot_verbrauchte_energie') not in ['unknown','unavailable','none'] }}
+
+      # 24h kWh (rollend)
+      - name: "Ohmpilot Energie 24h (kWh)"
+        unique_id: ohmpilot_energy_24h_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: measurement
+        state: "{{ (states('sensor.ohmpilot_energie_24h_wh') | float(0) / 1000) | round(3) }}"
+        availability: >
+          {{ states('sensor.ohmpilot_energie_24h_wh') not in ['unknown','unavailable','none'] }}
+
+      # Heute kWh  <-- DEUTSCHE ID
+      - name: "Ohmpilot Energie heute (kWh)"
+        unique_id: ohmpilot_energy_today_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "{{ (states('sensor.ohmpilot_energie_heute_wh') | float(0) / 1000) | round(3) }}"
+        availability: >
+          {{ states('sensor.ohmpilot_energie_heute_wh') not in ['unknown','unavailable','none'] }}
+
+      # Monat kWh  <-- DEUTSCHE ID
+      - name: "Ohmpilot Energie Monat (kWh)"
+        unique_id: ohmpilot_energy_month_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "{{ (states('sensor.ohmpilot_energie_monat_wh') | float(0) / 1000) | round(3) }}"
+        availability: >
+          {{ states('sensor.ohmpilot_energie_monat_wh') not in ['unknown','unavailable','none'] }}
+
+      # Jahr kWh  <-- DEUTSCHE ID
+      - name: "Ohmpilot Energie Jahr (kWh)"
+        unique_id: ohmpilot_energy_year_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "{{ (states('sensor.ohmpilot_energie_jahr_wh') | float(0) / 1000) | round(3) }}"
+        availability: >
+          {{ states('sensor.ohmpilot_energie_jahr_wh') not in ['unknown','unavailable','none'] }}

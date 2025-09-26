@@ -1,0 +1,103 @@
+# /config/packages/battery_dummy.yaml
+# Dummy-Batterie-Sensoren für Räume: Wohnzimmer, Arbeitszimmer, Küche, Flur, Treppe, Arbeitsraum
+
+template:
+  - sensor:
+      - name: wohnzimmer_batterie_prozent
+        unique_id: dummy_wohnzimmer_batterie_prozent
+        state: 66
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.wohnzimmer_batterie_prozent') | int(0) %}
+          {% if p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% elif p > 0 %}mdi:battery-alert
+          {% else %}mdi:battery-unknown{% endif %}
+
+      - name: arbeitszimmer_batterie_prozent
+        unique_id: dummy_arbeitszimmer_batterie_prozent
+        state: 33
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.arbeitszimmer_batterie_prozent') | int(0) %}
+          {% if p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% elif p > 0 %}mdi:battery-alert
+          {% else %}mdi:battery-unknown{% endif %}
+
+      - name: kueche_batterie_prozent
+        unique_id: dummy_kueche_batterie_prozent
+        state: 78
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.kueche_batterie_prozent') | int(0) %}
+          {% if p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% elif p > 0 %}mdi:battery-alert
+          {% else %}mdi:battery-unknown{% endif %}
+
+      - name: flur_batterie_prozent
+        unique_id: dummy_flur_batterie_prozent
+        state: 73
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.flur_batterie_prozent') | int(0) %}
+          {% if p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% elif p > 0 %}mdi:battery-alert
+          {% else %}mdi:battery-unknown{% endif %}
+
+      - name: treppe_batterie_prozent
+        unique_id: dummy_treppe_batterie_prozent
+        state: 59
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.treppe_batterie_prozent') | int(0) %}
+          {% if p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% elif p > 0 %}mdi:battery-alert
+          {% else %}mdi:battery-unknown{% endif %}
+
+      - name: arbeitsraum_batterie_prozent
+        unique_id: dummy_arbeitsraum_batterie_prozent
+        state: 92
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.arbeitsraum_batterie_prozent') | int(0) %}
+          {% if p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% elif p > 0 %}mdi:battery-alert
+          {% else %}mdi:battery-unknown{% endif %}
+
+homeassistant:
+  customize:
+    sensor.wohnzimmer_batterie_prozent:
+      friendly_name: "Bewegungsmelder"
+    sensor.arbeitszimmer_batterie_prozent:
+      friendly_name: "Aufsteller-Button"
+    sensor.kueche_batterie_prozent:
+      friendly_name: "Dimmer"
+    sensor.flur_batterie_prozent:
+      friendly_name: "Klingel"
+    sensor.treppe_batterie_prozent:
+      friendly_name: "Bewegungsmelder Treppe"
+    sensor.arbeitsraum_batterie_prozent:
+      friendly_name: "Licht-Button"

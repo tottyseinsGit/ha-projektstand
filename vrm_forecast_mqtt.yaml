@@ -1,0 +1,106 @@
+mqtt:
+  sensor:
+    # ===== 24h-Gesamtsummen (Wh → kWh) aus totals =====
+    - name: "vrm_solar_total_24h_kwh"
+      unique_id: vrm_solar_total_24h_kwh
+      state_topic: "victron/vrm/forecast/raw"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      value_template: >-
+        {{ (value_json.totals.solar_yield_forecast | float(0) / 1000) | round(2) }}
+
+    - name: "vrm_consumption_total_24h_kwh"
+      unique_id: vrm_consumption_total_24h_kwh
+      state_topic: "victron/vrm/forecast/raw"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      value_template: >-
+        {{ (value_json.totals.vrm_consumption_fc | float(0) / 1000) | round(2) }}
+
+    # ===== Rest HEUTE bis 23:59:59 (aus den 24 Punkten über Timestamp-Filter) =====
+    - name: "vrm_solar_remaining_today_kwh"
+      unique_id: vrm_solar_remaining_today_kwh
+      state_topic: "victron/vrm/forecast/raw"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      value_template: >-
+        {% set arr = value_json.records.solar_yield_forecast if value_json.records is defined else [] %}
+        {% set now_ms = (as_timestamp(now()) * 1000) | float(0) %}
+        {% set end_ms = (as_timestamp(today_at('23:59:59')) * 1000) | float(0) %}
+        {% set ns = namespace(wh=0) %}
+        {% if arr is sequence %}
+          {% for p in arr %}
+            {% set ts = (p[0] | float(0)) %}
+            {% if ts >= now_ms and ts <= end_ms %}
+              {% set ns.wh = ns.wh + (p[1] | float(0)) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ (ns.wh / 1000) | round(2) }}
+
+    - name: "vrm_consumption_remaining_today_kwh"
+      unique_id: vrm_consumption_remaining_today_kwh
+      state_topic: "victron/vrm/forecast/raw"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      value_template: >-
+        {% set arr = value_json.records.vrm_consumption_fc if value_json.records is defined else [] %}
+        {% set now_ms = (as_timestamp(now()) * 1000) | float(0) %}
+        {% set end_ms = (as_timestamp(today_at('23:59:59')) * 1000) | float(0) %}
+        {% set ns = namespace(wh=0) %}
+        {% if arr is sequence %}
+          {% for p in arr %}
+            {% set ts = (p[0] | float(0)) %}
+            {% if ts >= now_ms and ts <= end_ms %}
+              {% set ns.wh = ns.wh + (p[1] | float(0)) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ (ns.wh / 1000) | round(2) }}
+
+    # ===== Morgen (Mitternacht→nächste Mitternacht, lokal) =====
+    - name: "vrm_solar_tomorrow_kwh"
+      unique_id: vrm_solar_tomorrow_kwh
+      state_topic: "victron/vrm/forecast/raw"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      value_template: >-
+        {% set arr = value_json.records.solar_yield_forecast if value_json.records is defined else [] %}
+        {% set start_ms = (as_timestamp(today_at('00:00')) + 24*3600) * 1000 %}
+        {% set end_ms   = (as_timestamp(today_at('00:00')) + 48*3600) * 1000 %}
+        {% set ns = namespace(wh=0) %}
+        {% if arr is sequence %}
+          {% for p in arr %}
+            {% set ts = (p[0] | float(0)) %}
+            {% if ts >= start_ms and ts < end_ms %}
+              {% set ns.wh = ns.wh + (p[1] | float(0)) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ (ns.wh / 1000) | round(2) }}
+
+    - name: "vrm_consumption_tomorrow_kwh"
+      unique_id: vrm_consumption_tomorrow_kwh
+      state_topic: "victron/vrm/forecast/raw"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      value_template: >-
+        {% set arr = value_json.records.vrm_consumption_fc if value_json.records is defined else [] %}
+        {% set start_ms = (as_timestamp(today_at('00:00')) + 24*3600) * 1000 %}
+        {% set end_ms   = (as_timestamp(today_at('00:00')) + 48*3600) * 1000 %}
+        {% set ns = namespace(wh=0) %}
+        {% if arr is sequence %}
+          {% for p in arr %}
+            {% set ts = (p[0] | float(0)) %}
+            {% if ts >= start_ms and ts < end_ms %}
+              {% set ns.wh = ns.wh + (p[1] | float(0)) %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ (ns.wh / 1000) | round(2) }}

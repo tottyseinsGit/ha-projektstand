@@ -1,0 +1,76 @@
+# /config/packages/hausleistung_netto.yaml
+# Berechnet die Haus-Leistung (ohne Wärmepumpe) und erzeugt Energie-Zähler.
+# Formel: P_haus = P_grid_pos - P_wp
+# Quelle:
+#   sensor.smart_meter_wirkleistung_positiv_w     (W, >= 0)
+#   sensor.keller_altherma_elektrische_leistung_w (W)
+
+template:
+  - sensor:
+      # 1) Roh-Differenz (kann negativ sein, Infozweck)
+      - name: "Haus netto – Leistung [W]"
+        unique_id: haus_netto_leistung_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >
+          {% set p_grid = states('sensor.smart_meter_wirkleistung_positiv_w') | float(0) %}
+          {% set p_wp   = states('sensor.keller_altherma_elektrische_leistung_w') | float(0) %}
+          {{ (p_grid - p_wp) | round(0) }}
+        attributes:
+          source_grid_w: "{{ states('sensor.smart_meter_wirkleistung_positiv_w') | float(0) }}"
+          source_wp_w: "{{ states('sensor.keller_altherma_elektrische_leistung_w') | float(0) }}"
+          formula: "haus = grid_pos - wp"
+        availability: >
+          {{ states('sensor.smart_meter_wirkleistung_positiv_w') not in ['unknown','unavailable','none']
+             and states('sensor.keller_altherma_elektrische_leistung_w') not in ['unknown','unavailable','none'] }}
+
+      # 2) Nur positive Leistung (für Energie-Zähler geeignet)
+      - name: "Haus netto – Leistung positiv [W]"
+        unique_id: haus_netto_leistung_pos_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.haus_netto_leistung_w') | float(0) %}
+          {{ [p, 0] | max | round(0) }}
+        attributes:
+          source_entity: "sensor.haus_netto_leistung_w"
+          logic: "negativ -> 0 (nur Verbrauch zählen)"
+        availability: >
+          {{ states('sensor.haus_netto_leistung_w') not in ['unknown','unavailable','none'] }}
+
+sensor:
+  # 3) Integration: W -> kWh (Energie Haus netto)
+  - platform: integration
+    name: "Haus netto – Energie [kWh]"
+    source: sensor.haus_netto_leistung_pos_w
+    method: trapezoidal
+    unit_prefix: k
+    round: 3
+
+  # 4) Rollende 24h-Änderung (kWh)
+  - platform: statistics
+    name: "Haus netto – Energie 24h [kWh]"
+    entity_id: sensor.haus_netto_energie_kwh
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 1000
+    precision: 3
+
+utility_meter:
+  # 5) Heute / Monat / Jahr (Kalender-Zähler) auf Basis der integrierten Energie
+  haus_netto_energy_day:
+    name: "Haus netto – Energie heute [kWh]"
+    source: sensor.haus_netto_energie_kwh
+    cycle: daily
+  haus_netto_energy_month:
+    name: "Haus netto – Energie Monat [kWh]"
+    source: sensor.haus_netto_energie_kwh
+    cycle: monthly
+  haus_netto_energy_year:
+    name: "Haus netto – Energie Jahr [kWh]"
+    source: sensor.haus_netto_energie_kwh
+    cycle: yearly
+

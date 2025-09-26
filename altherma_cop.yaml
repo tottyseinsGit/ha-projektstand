@@ -1,0 +1,75 @@
+# /config/packages/altherma_cop.yaml
+# COP (instantan) + SCOP (heute/Monat/Jahr) auf Basis deiner bestehenden Sensoren.
+
+template:
+  - sensor:
+      # Instantaner COP aus Leistungen (mit Deadband & 0-Division-Schutz)
+      - name: "altherma_cop"
+        unique_id: altherma_cop
+        # keine Einheit (üblich); wenn du "COP" willst, setz unit_of_measurement: "COP"
+        state_class: measurement
+        state: >
+          {% set Pth = states('sensor.altherma_thermische_leistung_w')|float(0) %}
+          {% set Pel = states('sensor.keller_altherma_elektrische_leistung_w')|float(0) %}
+          {% set pel_min = 50.0 %}   {# Deadband elektrisch #}
+          {% set pth_min = 100.0 %}  {# Deadband thermisch  #}
+          {% if Pel > pel_min and Pth > pth_min %}
+            {{ (Pth / Pel) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+        attributes:
+          p_thermal_w: "{{ states('sensor.altherma_thermische_leistung_w')|float(0) }}"
+          p_electric_w: "{{ states('sensor.keller_altherma_elektrische_leistung_w')|float(0) }}"
+          deadband_pel_w: 50
+          deadband_pth_w: 100
+
+      # SCOP (tagesweise): kWh-Verhältnis (thermisch / elektrisch)
+      - name: "altherma_scop_heute"
+        unique_id: altherma_scop_heute
+        state_class: measurement
+        state: >
+          {% set Eth = states('sensor.altherma_thermisch_heute')|float(0) %}
+          {% set Eel = states('sensor.altherma_elektrisch_heute')|float(0) %}
+          {% if Eel > 0 %}
+            {{ (Eth / Eel) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+      # SCOP (monatlich)
+      - name: "altherma_scop_monat"
+        unique_id: altherma_scop_monat
+        state_class: measurement
+        state: >
+          {% set Eth = states('sensor.altherma_thermisch_monat')|float(0) %}
+          {% set Eel = states('sensor.altherma_elektrisch_monat')|float(0) %}
+          {% if Eel > 0 %}
+            {{ (Eth / Eel) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+      # SCOP (jährlich)
+      - name: "altherma_scop_jahr"
+        unique_id: altherma_scop_jahr
+        state_class: measurement
+        state: >
+          {% set Eth = states('sensor.altherma_thermisch_jahr')|float(0) %}
+          {% set Eel = states('sensor.altherma_elektrisch_jahr')|float(0) %}
+          {% if Eel > 0 %}
+            {{ (Eth / Eel) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+sensor:
+  # 24h-Gleitmittelwert des *instantanen* COP (für den Verlauf)
+  - platform: statistics
+    name: "altherma_cop_24h_avg"
+    entity_id: sensor.altherma_cop
+    state_characteristic: mean
+    max_age:
+      hours: 24
+    sampling_size: 500
+    precision: 2

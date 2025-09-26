@@ -1,0 +1,142 @@
+# /config/packages/31_zaehler_whg02.yaml
+# Zähler & Eichfristen – WHG02
+
+input_text:
+  whg02_wasser_kalt_meter_id:
+    name: "WHG02 – KW: Meter-ID"
+    max: 32
+  whg02_wasser_kalt_meter_key:
+    name: "WHG02 – KW: Meter-Key (HEX)"
+    max: 64
+  whg02_wasser_kalt_hersteller:
+    name: "WHG02 – KW: Hersteller/Typ"
+    max: 80
+  whg02_wasser_kalt_standort:
+    name: "WHG02 – KW: Standort"
+    max: 80
+
+  whg02_wasser_warm_meter_id:
+    name: "WHG02 – WW: Meter-ID"
+    max: 32
+  whg02_wasser_warm_meter_key:
+    name: "WHG02 – WW: Meter-Key (HEX)"
+    max: 64
+  whg02_wasser_warm_hersteller:
+    name: "WHG02 – WW: Hersteller/Typ"
+    max: 80
+  whg02_wasser_warm_standort:
+    name: "WHG02 – WW: Standort"
+    max: 80
+
+  whg02_wmz_meter_id:
+    name: "WHG02 – WMZ: Meter-ID"
+    max: 32
+  whg02_wmz_meter_key:
+    name: "WHG02 – WMZ: Meter-Key (HEX)"
+    max: 64
+  whg02_wmz_hersteller:
+    name: "WHG02 – WMZ: Hersteller/Typ"
+    max: 80
+  whg02_wmz_standort:
+    name: "WHG02 – WMZ: Standort"
+    max: 80
+
+  whg02_strom_meter_id:
+    name: "WHG02 – Strom: Zählernummer/ID"
+    max: 32
+  whg02_strom_meter_key:
+    name: "WHG02 – Strom: Schlüssel (optional)"
+    max: 64
+  whg02_strom_hersteller:
+    name: "WHG02 – Strom: Hersteller/Typ"
+    max: 80
+  whg02_strom_standort:
+    name: "WHG02 – Strom: Standort"
+    max: 80
+
+input_number:
+  whg02_kw_eichfrist_jahre:
+    name: "WHG02 – KW: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg02_ww_eichfrist_jahre:
+    name: "WHG02 – WW: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg02_wmz_eichfrist_jahre:
+    name: "WHG02 – WMZ: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 6
+  whg02_strom_eichfrist_jahre:
+    name: "WHG02 – Strom: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 8
+
+input_datetime:
+  whg02_wasser_kalt_montage:
+    name: "WHG02 – KW: Montage"
+    has_date: true
+    has_time: false
+  whg02_wasser_warm_montage:
+    name: "WHG02 – WW: Montage"
+    has_date: true
+    has_time: false
+  whg02_wmz_montage:
+    name: "WHG02 – WMZ: Montage"
+    has_date: true
+    has_time: false
+  whg02_strom_montage:
+    name: "WHG02 – Strom: Montage"
+    has_date: true
+    has_time: false
+
+template:
+  - sensor:
+      - name: whg02_kw_eich_ablauf
+        unique_id: whg02_kw_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set d = states('input_datetime.whg02_wasser_kalt_montage') %}
+          {% set y = states('input_number.whg02_kw_eichfrist_jahre')|int(0) %}
+          {% if d not in ['unknown','unavailable',''] and y>0 %}
+            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% else %} {{ none }} {% endif %}
+      - name: whg02_ww_eich_ablauf
+        unique_id: whg02_ww_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set d = states('input_datetime.whg02_wasser_warm_montage') %}
+          {% set y = states('input_number.whg02_ww_eichfrist_jahre')|int(0) %}
+          {% if d not in ['unknown','unavailable',''] and y>0 %}
+            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% else %} {{ none }} {% endif %}
+      - name: whg02_wmz_eich_ablauf
+        unique_id: whg02_wmz_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set d = states('input_datetime.whg02_wmz_montage') %}
+          {% set y = states('input_number.whg02_wmz_eichfrist_jahre')|int(0) %}
+          {% if d not in ['unknown','unavailable',''] and y>0 %}
+            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% else %} {{ none }} {% endif %}
+      - name: whg02_strom_eich_ablauf
+        unique_id: whg02_strom_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set d = states('input_datetime.whg02_strom_montage') %}
+          {% set y = states('input_number.whg02_strom_eichfrist_jahre')|int(0) %}
+          {% if d not in ['unknown','unavailable',''] and y>0 %}
+            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% else %} {{ none }} {% endif %}

@@ -1,0 +1,556 @@
+# /config/packages/espaltherma_extract_all.yaml
+# Quelle: sensor.none_althermasensors  (enthält das komplette MQTT-JSON als Attribute)
+# Ziel: je Attribut ein eigener Sensor / Binary-Sensor (Namen exakt wie im MQTT).
+
+template:
+  - sensor:
+
+      # --- Zähler / IDs / Codes ---
+      - name: "Erkannte DX Innengerätezahl (max. 59 anzeigbar)"
+        unique_id: altherma_erkannte_dx_innengeraetezahl
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Erkannte DX Innengerätezahl (max. 59 anzeigbar)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Max. Außengerät Leistung (kW)"
+        unique_id: altherma_max_aussengeraet_leistung_kw
+        device_class: power
+        unit_of_measurement: "kW"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Max. Außengerät Leistung (kW)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Störcode"
+        unique_id: altherma_stoercode
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Störcode') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Adresse des Innengeräts"
+        unique_id: altherma_adresse_des_innengeraets
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Adresse des Innengeräts') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Fehlerdetailcode"
+        unique_id: altherma_fehlerdetailcode
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Fehlerdetailcode') | string | replace(',', '.') | float(0) }}"
+
+      # --- Texte 1:1 ---
+      - name: "Aktuelle Betriebsart"
+        unique_id: altherma_aktuelle_betriebsart
+        state: "{{ state_attr('sensor.none_althermasensors','Aktuelle Betriebsart') | default('') }}"
+
+      - name: "Betriebsart"
+        unique_id: altherma_betriebsart
+        state: "{{ state_attr('sensor.none_althermasensors','Betriebsart') | default('') }}"
+
+      - name: "Betrieb / Störung"
+        unique_id: altherma_betrieb_stoerung
+        state: "{{ state_attr('sensor.none_althermasensors','Betrieb / Störung') | default('') }}"
+
+      # --- Temperaturen / Drücke / Ströme / Diverses (Zahlenwerte) ---
+      - name: "R1T-Außentemperatur"
+        unique_id: altherma_r1t_aussentemperatur
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R1T-Außentemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "O/U Wärmetauscher Temp.(R4T)"
+        unique_id: altherma_ou_waermetauscher_r4t
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','O/U Wärmetauscher Temp.(R4T)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R2T-Verdichtungsendtemperatur"
+        unique_id: altherma_r2t_verdichtungsendtemperatur
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R2T-Verdichtungsendtemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Saugrohrtemp. (R3T)"
+        unique_id: altherma_r3t_saugrohrtemp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Saugrohrtemp. (R3T)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Wärmetauscher Mitteltemp.(R5T)"
+        unique_id: altherma_r5t_waermetauscher_mittel
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Wärmetauscher Mitteltemp.(R5T)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Flüssigkeitsleitungstemp. (R6T)"
+        unique_id: altherma_r6t_fluessigkeitsleitungstemp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Flüssigkeitsleitungstemp. (R6T)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Hochdruck"
+        unique_id: altherma_hochdruck
+        device_class: pressure
+        unit_of_measurement: "bar"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Hochdruck') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Hochdruck in °C"
+        unique_id: altherma_hochdruck_in_c
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Hochdruck in °C') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Niederdruck"
+        unique_id: altherma_niederdruck
+        device_class: pressure
+        unit_of_measurement: "bar"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Niederdruck') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Niederdruck in °C"
+        unique_id: altherma_niederdruck_in_c
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Niederdruck in °C') | string | replace(',', '.') | float(0) }}"
+
+      - name: "INV Platine Eingangsstrom (A) (Primärkreis)"
+        unique_id: altherma_inv_platine_eingangsstrom_a_primaer
+        device_class: current
+        unit_of_measurement: "A"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','INV Platine Eingangsstrom (A) (Primärkreis)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Stromaufnahme INV-Verdichter (A) (Sekundärkreis)"
+        unique_id: altherma_stromaufnahme_inv_verdichter_a_sekundaer
+        device_class: current
+        unit_of_measurement: "A"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Stromaufnahme INV-Verdichter (A) (Sekundärkreis)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Inverter Platinentemperatur"
+        unique_id: altherma_inverter_platinentemperatur
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Inverter Platinentemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Platinentemperatur Lüfter 1"
+        unique_id: altherma_platinentemperatur_luefter_1
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Platinentemperatur Lüfter 1') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Platinentemperatur Lüfter 2"
+        unique_id: altherma_platinentemperatur_luefter_2
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Platinentemperatur Lüfter 2') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Verdichtungsendtemperatur"
+        unique_id: altherma_verdichtungsendtemperatur
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Verdichtungsendtemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Drehzahl Verdichter (U/Sek)"
+        unique_id: altherma_drehzahl_verdichter_hz
+        device_class: frequency
+        unit_of_measurement: "Hz"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Drehzahl Verdichter (U/Sek)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Ventilator 1 (Stufe)"
+        unique_id: altherma_ventilator_1_stufe
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Ventilator 1 (Stufe)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Ventilator 2 (Stufe)"
+        unique_id: altherma_ventilator_2_stufe
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Ventilator 2 (Stufe)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Expansionsventil_1 (pls)"
+        unique_id: altherma_expansionsventil_1_pls
+        unit_of_measurement: "pls"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Expansionsventil_1 (pls)') | default(state_attr('sensor.none_althermasensors','Expansionsventil 1 (pls)')) | string | replace(',', '.') | float(0) }}"
+
+      - name: "AG Wärmetauschertemp."
+        unique_id: altherma_ag_waermetauschertemp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','AG Wärmetauschertemp.') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Flüssigkeitsleitungstemp."
+        unique_id: altherma_fluessigkeitsleitungstemp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Flüssigkeitsleitungstemp.') | default(state_attr('sensor.none_althermasensors','R3T-Kältemittel Flüssigkeitstemperatur')) | string | replace(',', '.') | float(0) }}"
+
+      - name: "Druck"
+        unique_id: altherma_druck
+        device_class: pressure
+        unit_of_measurement: "bar"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Druck') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Verdichtertemperatur"
+        unique_id: altherma_verdichtertemperatur
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Verdichtertemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R9T-Wassereintrittstemp. vor PWT"
+        unique_id: altherma_r9t_wassereintritt_vor_pwt
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R9T-Wassereintrittstemp. vor PWT') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R10T-Wasseraustrittstemp. nach PWT"
+        unique_id: altherma_r10t_wasseraustritt_nach_pwt
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R10T-Wasseraustrittstemp. nach PWT') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Sollwert Brauchwasser"
+        unique_id: altherma_sollwert_brauchwasser
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Sollwert Brauchwasser') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Sollwert Heizungsvorlauf Hauptzone"
+        unique_id: altherma_sollwert_hzg_vorlauf_hauptzone
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Sollwert Heizungsvorlauf Hauptzone') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R1T-Wasser Vorlauftemp. nach dem Plattenwärmetauscher"
+        unique_id: altherma_r1t_wasser_vorlauf_nach_pwt
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R1T-Wasser Vorlauftemp. nach dem Plattenwärmetauscher') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R2T-Wasser Vorlauftemp. nach dem Heizstab"
+        unique_id: altherma_r2t_wasser_vorlauf_nach_heizstab
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R2T-Wasser Vorlauftemp. nach dem Heizstab') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R3T-Kältemittel Flüssigkeitstemperatur"
+        unique_id: altherma_r3t_kaeltemittel_fluessigkeitstemp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R3T-Kältemittel Flüssigkeitstemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R4T-Wasser Rücklauftemp. vor dem Plattenwärmetauscher"
+        unique_id: altherma_r4t_wasser_ruecklauf_vor_pwt
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R4T-Wasser Rücklauftemp. vor dem Plattenwärmetauscher') | string | replace(',', '.') | float(0) }}"
+
+      - name: "R5T-Brauchwassertemperatur im Speicher"
+        unique_id: altherma_r5t_brauchwassertemperatur_im_speicher
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','R5T-Brauchwassertemperatur im Speicher') | string | replace(',', '.') | float(0) }}"
+
+      - name: "IG Luftansaugtemperatur (R1T)"
+        unique_id: altherma_ig_luftansaugtemperatur_r1t
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','IG Luftansaugtemperatur (R1T)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Sollwert Heizungsvorlauf Zusatzzone"
+        unique_id: altherma_sollwert_hzg_vorlauf_zusatzzone
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Sollwert Heizungsvorlauf Zusatzzone') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Sollwert Raumtemperatur"
+        unique_id: altherma_sollwert_raumtemperatur
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Sollwert Raumtemperatur') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Durchflussmenge (l/min)"
+        unique_id: altherma_durchfluss_lmin
+        unit_of_measurement: "L/min"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Durchflussmenge (l/min)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Wasserdruck"
+        unique_id: altherma_wasserdruck
+        device_class: pressure
+        unit_of_measurement: "bar"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Wasserdruck') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Pumpengeschwindigkeit (0: Max-100: Stop)"
+        unique_id: altherma_pumpengeschwindigkeit_code
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Pumpengeschwindigkeit (0: Max-100: Stop)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "[Zukunft] 3-Wege-Ventil Mischung 1"
+        unique_id: altherma_zukunft_mix1
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','[Zukunft] 3-Wege-Ventil Mischung 1') | string | replace(',', '.') | float(0) }}"
+
+      - name: "[Zukunft] 3-Wege-Ventil Mischung 2"
+        unique_id: altherma_zukunft_mix2
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','[Zukunft] 3-Wege-Ventil Mischung 2') | string | replace(',', '.') | float(0) }}"
+
+      - name: "Kältemittel-Drucksensor"
+        unique_id: altherma_kaeltemittel_drucksensor
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','Kältemittel-Drucksensor') | string | replace(',', '.') | float(0) }}"
+
+      - name: "CT-Sensormessung (L1)"
+        unique_id: altherma_ct_l1
+        device_class: current
+        unit_of_measurement: "A"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','CT-Sensormessung (L1)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "CT-Sensormessung (L2)"
+        unique_id: altherma_ct_l2
+        device_class: current
+        unit_of_measurement: "A"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','CT-Sensormessung (L2)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "CT-Sensormessung (L3)"
+        unique_id: altherma_ct_l3
+        device_class: current
+        unit_of_measurement: "A"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','CT-Sensormessung (L3)') | string | replace(',', '.') | float(0) }}"
+
+      - name: "BE_COP"
+        unique_id: altherma_be_cop
+        unit_of_measurement: ""
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','BE_COP') | default(state_attr('sensor.none_althermasensors','BE COP')) | string | replace(',', '.') | float(0) }}"
+
+      - name: "M5BatV"
+        unique_id: altherma_m5batv
+        device_class: voltage
+        unit_of_measurement: "V"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','M5BatV') | string | replace('V','') | replace(',', '.') | float(0) }}"
+
+      - name: "WifiRSSI"
+        unique_id: altherma_wifirssi
+        device_class: signal_strength
+        unit_of_measurement: "dBm"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','WifiRSSI') | string | replace('dBm','') | replace(',', '.') | float(0) }}"
+
+      - name: "FreeMem"
+        unique_id: altherma_freemem
+        device_class: data_size
+        unit_of_measurement: "B"
+        state_class: measurement
+        state: "{{ state_attr('sensor.none_althermasensors','FreeMem') | string | replace(',', '.') | float(0) }}"
+
+  - binary_sensor:
+
+      - name: "Thermostat EIN/AUS"
+        unique_id: altherma_thermostat_ein_aus
+        state: "{{ (state_attr('sensor.none_althermasensors','Thermostat EIN/AUS') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Thermostat EIN/AUS') }}"
+
+      - name: "Wiederanlaufverzögerung"
+        unique_id: altherma_wiederanlaufverzoegerung
+        state: "{{ (state_attr('sensor.none_althermasensors','Wiederanlaufverzögerung') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Wiederanlaufverzögerung') }}"
+
+      - name: "Anlaufregelung"
+        unique_id: altherma_anlaufregelung
+        state: "{{ (state_attr('sensor.none_althermasensors','Anlaufregelung') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Anlaufregelung') }}"
+
+      - name: "Abtauung"
+        unique_id: altherma_abtauung
+        state: "{{ (state_attr('sensor.none_althermasensors','Abtauung') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Abtauung') }}"
+
+      - name: "Druckausgleich"
+        unique_id: altherma_druckausgleich
+        state: "{{ (state_attr('sensor.none_althermasensors','Druckausgleich') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Druckausgleich') }}"
+
+      - name: "Schallreduzierter Betrieb"
+        unique_id: altherma_schallreduzierter_betrieb
+        state: "{{ (state_attr('sensor.none_althermasensors','Schallreduzierter Betrieb') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Schallreduzierter Betrieb') }}"
+
+      - name: "Aktiver Notlauf"
+        unique_id: altherma_aktiver_notlauf
+        state: "{{ (state_attr('sensor.none_althermasensors','Aktiver Notlauf') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Aktiver Notlauf') }}"
+
+      - name: "Ausblasen der Inneneinheit bei 50 ° C"
+        unique_id: altherma_ausblasen_inneneinheit_50c
+        state: "{{ (state_attr('sensor.none_althermasensors','Ausblasen der Inneneinheit bei 50 ° C') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Ausblasen der Inneneinheit bei 50 ° C') }}"
+
+      - name: "Monobloc-Einstellung"
+        unique_id: altherma_monobloc_einstellung
+        state: "{{ (state_attr('sensor.none_althermasensors','Monobloc-Einstellung') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Monobloc-Einstellung') }}"
+
+      - name: "Altherma LT-Einstellung"
+        unique_id: altherma_lt_einstellung
+        state: "{{ (state_attr('sensor.none_althermasensors','Altherma LT-Einstellung') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Altherma LT-Einstellung') }}"
+
+      - name: "Daten Aktivieren/Deaktivieren"
+        unique_id: altherma_daten_aktivieren_deaktivieren
+        state: "{{ (state_attr('sensor.none_althermasensors','Daten Aktivieren/Deaktivieren') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Daten Aktivieren/Deaktivieren') }}"
+
+      - name: "Frostschutz"
+        unique_id: altherma_frostschutz
+        state: "{{ (state_attr('sensor.none_althermasensors','Frostschutz') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Frostschutz') }}"
+
+      - name: "Frostschutz für Wasserleitung"
+        unique_id: altherma_frostschutz_fuer_wasserleitung
+        state: "{{ (state_attr('sensor.none_althermasensors','Frostschutz für Wasserleitung') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Frostschutz für Wasserleitung') }}"
+
+      - name: "Strömungsschalter (ON=OK)"
+        unique_id: altherma_stroemungsschalter_on_ok
+        state: "{{ (state_attr('sensor.none_althermasensors','Strömungsschalter (ON=OK)') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Strömungsschalter (ON=OK)') }}"
+
+      - name: "Übertemperaturschutz Clixon BUH (ON=OK)"
+        unique_id: altherma_clixon_buh_on_ok
+        state: "{{ (state_attr('sensor.none_althermasensors','Übertemperaturschutz Clixon BUH (ON=OK)') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Übertemperaturschutz Clixon BUH (ON=OK)') }}"
+
+      - name: "2-Wege-Ventil_Shut Off Valve"
+        unique_id: altherma_2_wege_ventil_shut_off_valve
+        state: "{{ (state_attr('sensor.none_althermasensors','2-Wege-Ventil_Shut Off Valve') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','2-Wege-Ventil_Shut Off Valve') }}"
+
+      - name: "3-Wege-Ventil (ON: DHW/OFF: Raumheizung)"
+        unique_id: altherma_3_wege_ventil_dhw
+        state: "{{ (state_attr('sensor.none_althermasensors','3-Wege-Ventil (ON: DHW/OFF: Raumheizung)') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','3-Wege-Ventil (ON: DHW/OFF: Raumheizung)') }}"
+
+      - name: "Heizstab Speicher (BSH)"
+        unique_id: altherma_heizstab_speicher_bsh
+        state: "{{ (state_attr('sensor.none_althermasensors','Heizstab Speicher (BSH)') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Heizstab Speicher (BSH)') }}"
+
+      - name: "Heizstab Stufe 1"
+        unique_id: altherma_heizstab_stufe_1
+        state: "{{ (state_attr('sensor.none_althermasensors','Heizstab Stufe 1') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Heizstab Stufe 1') }}"
+
+      - name: "Heizstab Stufe 2"
+        unique_id: altherma_heizstab_stufe_2
+        state: "{{ (state_attr('sensor.none_althermasensors','Heizstab Stufe 2') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Heizstab Stufe 2') }}"
+
+      - name: "Brachwasserbetrieb (DHW)"
+        unique_id: altherma_brachwasserbetrieb_dhw
+        state: "{{ (state_attr('sensor.none_althermasensors','Brachwasserbetrieb (DHW)') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Brachwasserbetrieb (DHW)') }}"
+
+      - name: "Speicher Eco-Mode"
+        unique_id: altherma_speicher_eco_mode
+        state: "{{ (state_attr('sensor.none_althermasensors','Speicher Eco-Mode') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Speicher Eco-Mode') }}"
+
+      - name: "Speicher Kompfort-Mode"
+        unique_id: altherma_speicher_kompfort_mode
+        state: "{{ (state_attr('sensor.none_althermasensors','Speicher Kompfort-Mode') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Speicher Kompfort-Mode') }}"
+
+      - name: "Speicher Power-Mode"
+        unique_id: altherma_speicher_power_mode
+        state: "{{ (state_attr('sensor.none_althermasensors','Speicher Power-Mode') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Speicher Power-Mode') }}"
+
+      - name: "Raumheizbetrieb"
+        unique_id: altherma_raumheizbetrieb
+        state: "{{ (state_attr('sensor.none_althermasensors','Raumheizbetrieb') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Raumheizbetrieb') }}"
+
+      - name: "System AUS"
+        unique_id: altherma_system_aus
+        state: "{{ (state_attr('sensor.none_althermasensors','System AUS') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','System AUS') }}"
+
+      - name: "Notbetrieb aktiviert/nicht aktiviert"
+        unique_id: altherma_notbetrieb_aktiviert
+        state: "{{ (state_attr('sensor.none_althermasensors','Notbetrieb aktiviert/nicht aktiviert') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','Notbetrieb aktiviert/nicht aktiviert') }}"
+
+      - name: "HP Forced FG"
+        unique_id: altherma_hp_forced_fg
+        state: "{{ (state_attr('sensor.none_althermasensors','HP Forced FG') | string | upper) == 'ON' }}"
+        attributes:
+          raw_state: "{{ state_attr('sensor.none_althermasensors','HP Forced FG') }}"

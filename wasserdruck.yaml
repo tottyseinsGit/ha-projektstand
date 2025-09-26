@@ -1,0 +1,45 @@
+# === Telegram (nutzt deine secrets.yaml) ===
+telegram_bot:
+  - platform: polling
+    api_key: !secret telegram_bot_token
+    allowed_chat_ids:
+      - !secret telegram_chat_id
+
+notify:
+  - name: telegram_torsten
+    platform: telegram
+    chat_id: !secret telegram_chat_id
+
+# === Wasserdruck-Alarm & Entwarnung (mit Hysterese) ===
+automation:
+  - alias: Wasserdruck niedrig (Telegram)
+    id: wasserdruck_low_telegram
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.wasserdruck     # <-- falls dein Sensor anders heißt, anpassen
+        below: 0.4                        # Alarmgrenze (bar)
+        for: "00:03:00"                   # 2 Minuten warten vor Alarm
+    action:
+      - service: notify.telegram_torsten
+        data:
+          message: >
+            ⚠️ Wasserdruck kritisch: {{ states('sensor.wasserdruck') }} bar
+            ({{ now().strftime('%H:%M') }}). 
+            Bitte Heizung befüllen – bevor sie in den Schmollmodus geht. 🛠️💧
+
+  - alias: Wasserdruck wieder ok (Telegram)
+    id: wasserdruck_ok_telegram
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.wasserdruck
+        above: 0.5                        # Entwarnung leicht über der Alarmgrenze
+        for: "00:03:00"
+    action:
+      - service: notify.telegram_torsten
+        data:
+          message: >
+            ✅ Wasserdruck wieder im grünen Bereich: {{ states('sensor.wasserdruck') }} bar
+            ({{ now().strftime('%H:%M') }}). 
+            Gut gemacht – die Heizung bedankt sich und gurgelt zufrieden. 😌

@@ -1,0 +1,14 @@
+# /config/packages/wmz_energy_day.yaml
+utility_meter:
+  wmz_energy_day_v1:
+    source: sensor.wmz_total_kwh
+    cycle: daily
+
+template:
+  - sensor:
+      - name: wmz_energy_day_v1
+        unique_id: wmz_energy_day_v1
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "{{ states('sensor.wmz_energy_day_v1') | float(0) }}"

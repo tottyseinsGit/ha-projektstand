@@ -1,0 +1,30 @@
+# /config/packages/espaltherma_power.yaml
+# WP-Leistung aus INV-Eingangsstrom (3φ-Approx) mit Victron L1-Spannung
+# Quellen:
+#  - Strom (A):  Attribut aus deinem Sammelsensor
+#  - Spannung (V_LN): sensor.victron_vebus_activein_l1_voltage_227
+# Formel: P ≈ 3 * V_LN * I * cosφ
+# Annahme: cosφ = 0.95
+
+template:
+  - sensor:
+      - name: "Keller – Altherma: elektrische Leistung [W]"
+        unique_id: keller_altherma_power_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >
+          {% set I = state_attr('sensor.none_althermasensors',
+                                'INV Platine Eingangsstrom (A) (Primärkreis)') | float(0) %}
+          {% set Vln = states('sensor.victron_vebus_activein_l1_voltage_227') | float(230) %}
+          {% set cosphi = 0.95 %}
+          {{ (3.0 * Vln * I * cosphi) | round(0) }}
+        attributes:
+          strom_a: "{{ state_attr('sensor.none_althermasensors', 'INV Platine Eingangsstrom (A) (Primärkreis)') | float(0) }}"
+          spannung_v_ln: "{{ states('sensor.victron_vebus_activein_l1_voltage_227') | float(230) }}"
+          cos_phi: 0.95
+          formel: "P ≈ 3 * V_LN * I * cosφ"
+        availability: >
+          {{ (state_attr('sensor.none_althermasensors',
+                          'INV Platine Eingangsstrom (A) (Primärkreis)') not in [none]) and
+             (states('sensor.victron_vebus_activein_l1_voltage_227') not in ['unknown','unavailable']) }}

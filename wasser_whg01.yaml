@@ -1,0 +1,141 @@
+# /config/packages/wasser_whg01.yaml
+# Annahme: wmbusmeters Add-on publiziert je Zähler ein JSON nach:
+#   Topic: wmbusmeters/<METER_NAME>
+# Für whg01 verwenden wir:
+#   - Kalt:  METER_NAME = Wasserzaehler_whg01_kalt
+#   - Warm:  METER_NAME = Wasserzaehler_whg01_warm
+#
+# Bitte im Add-on unter conf.meters[...] für jeden Zähler "name:" exakt so setzen,
+# damit die Topics passen. (Driver egal; JSON-Feldnamen werden robust gemappt.)
+
+mqtt:
+  sensor:
+    # =======================
+    # WHG01 – KALT (Gesamt)
+    # =======================
+    - object_id: whg01_wasserzaehler_total_m3_kalt
+      unique_id: whg01_wasserzaehler_total_m3_kalt
+      name: "Whg 01 – Wasser KALT: Gesamt [m³]"
+      state_topic: "wmbusmeters/Wasserzaehler_whg01_kalt"
+      value_template: >-
+        {% set s = value_json %}
+        {# bevorzugt total_m3; Fallbacks auf übliche Felder; sonst letzter Zustand #}
+        {% if s.total_m3 is defined %}
+          {{ s.total_m3 | float }}
+        {% elif s.total_l is defined %}
+          {{ (s.total_l | float) / 1000 }}
+        {% elif s.volume_m3 is defined %}
+          {{ s.volume_m3 | float }}
+        {% elif s.consumption_at_reporting_date_m3 is defined %}
+          {{ s.consumption_at_reporting_date_m3 | float }}
+        {% else %}
+          {{ states('sensor.whg01_wasserzaehler_total_m3_kalt') }}
+        {% endif %}
+      unit_of_measurement: "m³"
+      device_class: volume
+      state_class: total_increasing
+      icon: mdi:water
+
+    # Optional: Durchfluss (m³/h) – falls vorhanden
+    - object_id: whg01_wasserzaehler_flow_m3h_kalt
+      unique_id: whg01_wasserzaehler_flow_m3h_kalt
+      name: "Whg 01 – Wasser KALT: Durchfluss [m³/h]"
+      state_topic: "wmbusmeters/Wasserzaehler_whg01_kalt"
+      value_template: >-
+        {% if value_json.flow_m3h is defined %}
+          {{ value_json.flow_m3h | float }}
+        {% elif value_json.flow_lh is defined %}
+          {{ (value_json.flow_lh | float) / 1000 }}
+        {% else %}
+          {{ states('sensor.whg01_wasserzaehler_flow_m3h_kalt') }}
+        {% endif %}
+      unit_of_measurement: "m³/h"
+      device_class: volume_flow_rate
+      state_class: measurement
+      icon: mdi:water-pump
+
+    # =======================
+    # WHG01 – WARM (Gesamt)
+    # =======================
+    - object_id: whg01_wasserzaehler_total_m3_warm
+      unique_id: whg01_wasserzaehler_total_m3_warm
+      name: "Whg 01 – Wasser WARM: Gesamt [m³]"
+      state_topic: "wmbusmeters/Wasserzaehler_whg01_warm"
+      value_template: >-
+        {% set s = value_json %}
+        {% if s.total_m3 is defined %}
+          {{ s.total_m3 | float }}
+        {% elif s.total_l is defined %}
+          {{ (s.total_l | float) / 1000 }}
+        {% elif s.volume_m3 is defined %}
+          {{ s.volume_m3 | float }}
+        {% elif s.consumption_at_reporting_date_m3 is defined %}
+          {{ s.consumption_at_reporting_date_m3 | float }}
+        {% else %}
+          {{ states('sensor.whg01_wasserzaehler_total_m3_warm') }}
+        {% endif %}
+      unit_of_measurement: "m³"
+      device_class: volume
+      state_class: total_increasing
+      icon: mdi:water
+
+    # Optional: Durchfluss (m³/h) – falls vorhanden
+    - object_id: whg01_wasserzaehler_flow_m3h_warm
+      unique_id: whg01_wasserzaehler_flow_m3h_warm
+      name: "Whg 01 – Wasser WARM: Durchfluss [m³/h]"
+      state_topic: "wmbusmeters/Wasserzaehler_whg01_warm"
+      value_template: >-
+        {% if value_json.flow_m3h is defined %}
+          {{ value_json.flow_m3h | float }}
+        {% elif value_json.flow_lh is defined %}
+          {{ (value_json.flow_lh | float) / 1000 }}
+        {% else %}
+          {{ states('sensor.whg01_wasserzaehler_flow_m3h_warm') }}
+        {% endif %}
+      unit_of_measurement: "m³/h"
+      device_class: volume_flow_rate
+      state_class: measurement
+      icon: mdi:water-pump
+
+    # (optional) RSSI – einsehbar pro Zähler
+    - object_id: whg01_wasserzaehler_rssi_dbm_kalt
+      unique_id: whg01_wasserzaehler_rssi_dbm_kalt
+      name: "Whg 01 – Wasser KALT: RSSI [dBm]"
+      state_topic: "wmbusmeters/Wasserzaehler_whg01_kalt"
+      value_template: "{{ value_json.rssi_dbm | float(default=none) }}"
+      unit_of_measurement: "dBm"
+      state_class: measurement
+      icon: mdi:signal
+
+    - object_id: whg01_wasserzaehler_rssi_dbm_warm
+      unique_id: whg01_wasserzaehler_rssi_dbm_warm
+      name: "Whg 01 – Wasser WARM: RSSI [dBm]"
+      state_topic: "wmbusmeters/Wasserzaehler_whg01_warm"
+      value_template: "{{ value_json.rssi_dbm | float(default=none) }}"
+      unit_of_measurement: "dBm"
+      state_class: measurement
+      icon: mdi:signal
+
+# ===== Verbräuche (aus Gesamtzählern abgeleitet) =====
+utility_meter:
+  # KALT
+  whg01_wasser_kalt_m3_today:
+    source: sensor.whg01_wasserzaehler_total_m3_kalt
+    cycle: daily
+  whg01_wasser_kalt_m3_month:
+    source: sensor.whg01_wasserzaehler_total_m3_kalt
+    cycle: monthly
+  whg01_wasser_kalt_m3_year:
+    source: sensor.whg01_wasserzaehler_total_m3_kalt
+    cycle: yearly
+
+  # WARM
+  whg01_wasser_warm_m3_today:
+    source: sensor.whg01_wasserzaehler_total_m3_warm
+    cycle: daily
+  whg01_wasser_warm_m3_month:
+    source: sensor.whg01_wasserzaehler_total_m3_warm
+    cycle: monthly
+  whg01_wasser_warm_m3_year:
+    source: sensor.whg01_wasserzaehler_total_m3_warm
+    cycle: yearly

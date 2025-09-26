@@ -1,0 +1,61 @@
+# /config/packages/20_mieter_whg01.yaml
+# Mieterstammdaten – Wohnung 01 (zeitlos)
+
+input_text:
+  whg01_mieter_vorname:
+    name: "WHG01 – Vorname"
+    max: 64
+  whg01_mieter_nachname:
+    name: "WHG01 – Nachname"
+    max: 64
+  whg01_phone:
+    name: "WHG01 – Telefon"
+    max: 20
+  whg01_tenant_email:
+    name: "WHG01 – E-Mail"
+    max: 120
+  whg01_notizen:
+    name: "WHG01 – Notizen"
+    max: 240
+
+input_number:
+  whg01_wohnflaeche_m2:
+    name: "WHG01 – Wohnfläche [m²]"
+    min: 0
+    max: 1000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m²"
+  whg01_personen:
+    name: "WHG01 – Personen [Anzahl]"
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    unit_of_measurement: "Personen"
+  whg01_kaution_eur:
+    name: "WHG01 – Kaution [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+input_datetime:
+  whg01_einzug:
+    name: "WHG01 – Mietbeginn"
+    has_date: true
+    has_time: false
+  whg01_auszug:
+    name: "WHG01 – Mietende"
+    has_date: true
+    has_time: false
+
+input_boolean:
+  whg01_notify_verbrauch_monatlich:
+    name: "WHG01 – Monatsbenachrichtigung Verbrauch"
+  whg01_notify_enabled:
+    name: "WHG01 – Monatsbenachrichtigung Verbrauch"
+    icon: mdi:message-processing
+
+

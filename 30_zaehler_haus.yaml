@@ -1,0 +1,54 @@
+# /config/packages/30_zaehler_haus.yaml
+# Haus-Zähler (real via utility_meter) + Fallbacks auf input_number (wenn kein Realsensor)
+
+utility_meter:
+  # Jahresverbrauch Hausstrom 2025 – Quelle: ESPhome "Haus Allgemein, Kanal 1"
+  hausstrom_yearly_2025:
+    source: sensor.zaehler_haus_allgemein_haus_zahlerstand_kanal_1_gesamt_kwh
+    cycle: yearly
+
+  # Jahresmenge Wasser 2025 (falls vorhanden – sonst Fallback unten)
+  hauswasser_yearly_2025:
+    source: sensor.water_total_m3                 # <-- ggf. anpassen/ersetzen, wenn du Wasser real hast
+    cycle: yearly
+
+  # Jahresenergie Heizung/WW 2025 – Quelle: ESPhome "Xiao C6 WP"
+  heizung_yearly_2025:
+    source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh
+    cycle: yearly
+
+template:
+  - sensor:
+      # Jahresverbrauch Hausstrom 2025 (Utility Meter ODER Fallback: Eingabefeld)
+      - name: hausstrom_kwh_2025
+        unit_of_measurement: "kWh"
+        state: >-
+          {% set m = states('sensor.hausstrom_yearly_2025') %}
+          {% set f = states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025') %}
+          {% if m not in ['unknown','unavailable',''] %}
+            {{ m|float(0) }}
+          {% else %}
+            {{ f|float(0) }}
+          {% endif %}
+
+      # Jahresmenge Wasser 2025 (Utility Meter ODER Fallback: Eingabefeld)
+      - name: hauswasser_m3_2025
+        unit_of_measurement: "m³"
+        state: >-
+          {% set m = states('sensor.hauswasser_yearly_2025') %}
+          {% if m not in ['unknown','unavailable',''] %}
+            {{ m|float(0) }}
+          {% else %}
+            {{ states('input_number.haus_betriebskosten_wasser_frisch_m3')|float(0) }}
+          {% endif %}
+
+      # Jahresenergie Heizung/WW 2025 (Utility Meter ODER Fallback: Eingabefeld)
+      - name: heizenergie_kwh_2025
+        unit_of_measurement: "kWh"
+        state: >-
+          {% set m = states('sensor.heizung_yearly_2025') %}
+          {% if m not in ['unknown','unavailable',''] %}
+            {{ m|float(0) }}
+          {% else %}
+            {{ states('input_number.haus_betriebskosten_heizung_ww_zaehlerstand')|float(0) }}
+          {% endif %}

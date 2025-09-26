@@ -1,0 +1,258 @@
+## /config/packages/lsn50.yaml
+# LSN50 – saubere Entities auf Basis der TTN-CLEAN-Felder + Batterie-Status/Warnung.
+# Gerät: eui-a840411fa187bc37  (Ort: Keller)
+
+template:
+  - sensor:
+      # 1) Batteriespannung (V) – robust: findet die korrekte bat_v-Entity automatisch
+      - name: "lsn50_batteriespannung"
+        unique_id: "lsn50_A840411FA187BC37_bat_v"
+        state: >-
+          {% set candidates = [
+            'sensor.eui_a840411fa187bc37_bat_v',
+            'sensor.mylsn50sensor_eui_a840411fa187bc37_bat_v',
+            'sensor.bat_v'
+          ] %}
+          {% set src = namespace(id='') %}
+          {% for id in candidates %}
+            {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+              {% set src.id = id %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          {% if not src.id %}
+            {% for s in states.sensor | map(attribute='entity_id') | select('search','_bat_v$') %}
+              {% if states(s) not in ['unknown','unavailable',''] %}
+                {% set src.id = s %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ states(src.id) | float(0) }}
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+
+      # 2) ADC Kanal 0 (V)
+      - name: "lsn50_adc_kanal0_spannung"
+        unique_id: "lsn50_A840411FA187BC37_adc_ch0_v"
+        state: >-
+          {% set candidates = [
+            'sensor.eui_a840411fa187bc37_adc_ch0_v',
+            'sensor.mylsn50sensor_eui_a840411fa187bc37_adc_ch0_v',
+            'sensor.adc_ch0_v'
+          ] %}
+          {% set src = namespace(id='') %}
+          {% for id in candidates %}
+            {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+              {% set src.id = id %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          {% if not src.id %}
+            {% for s in states.sensor | map(attribute='entity_id') | select('search','_adc_ch0_v$') %}
+              {% if states(s) not in ['unknown','unavailable',''] %}
+                {% set src.id = s %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ states(src.id) | float(0) }}
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+
+      # 3) Temperaturfühler 1 (°C)
+      - name: "lsn50_temperatur_1"
+        unique_id: "lsn50_A840411FA187BC37_temp_c1"
+        state: >-
+          {% set candidates = [
+            'sensor.eui_a840411fa187bc37_temp_c1',
+            'sensor.mylsn50sensor_eui_a840411fa187bc37_temp_c1',
+            'sensor.temp_c1'
+          ] %}
+          {% set src = namespace(id='') %}
+          {% for id in candidates %}
+            {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+              {% set src.id = id %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          {% if not src.id %}
+            {% for s in states.sensor | map(attribute='entity_id') | select('search','_temp_c1$') %}
+              {% if states(s) not in ['unknown','unavailable',''] %}
+                {% set src.id = s %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ states(src.id) | float(nan) }}
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+      # 4) Temperaturfühler 2 (°C)
+      - name: "lsn50_temperatur_2"
+        unique_id: "lsn50_A840411FA187BC37_temp_c2"
+        state: >-
+          {% set candidates = [
+            'sensor.eui_a840411fa187bc37_temp_c2',
+            'sensor.mylsn50sensor_eui_a840411fa187bc37_temp_c2',
+            'sensor.temp_c2'
+          ] %}
+          {% set src = namespace(id='') %}
+          {% for id in candidates %}
+            {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+              {% set src.id = id %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          {% if not src.id %}
+            {% for s in states.sensor | map(attribute='entity_id') | select('search','_temp_c2$') %}
+              {% if states(s) not in ['unknown','unavailable',''] %}
+                {% set src.id = s %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ states(src.id) | float(nan) }}
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+      # 5) Temperaturfühler 3 (°C)
+      - name: "lsn50_temperatur_3"
+        unique_id: "lsn50_A840411FA187BC37_temp_c3"
+        state: >-
+          {% set candidates = [
+            'sensor.eui_a840411fa187bc37_temp_c3',
+            'sensor.mylsn50sensor_eui_a840411fa187bc37_temp_c3',
+            'sensor.temp_c3'
+          ] %}
+          {% set src = namespace(id='') %}
+          {% for id in candidates %}
+            {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+              {% set src.id = id %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          {% if not src.id %}
+            {% for s in states.sensor | map(attribute='entity_id') | select('search','_temp_c3$') %}
+              {% if states(s) not in ['unknown','unavailable',''] %}
+                {% set src.id = s %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ states(src.id) | float(nan) }}
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+      # 6) Betriebsmodus (Diagnose)
+      - name: "lsn50_betriebsmodus"
+        unique_id: "lsn50_A840411FA187BC37_work_mode"
+        state: >-
+          {% for id in [
+            'sensor.eui_a840411fa187bc37_work_mode',
+            'sensor.mylsn50sensor_eui_a840411fa187bc37_work_mode',
+            'sensor.work_mode'
+          ] %}
+            {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+              {{ states(id) }}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+        icon: mdi:cog
+        attributes:
+          mode_id: >-
+            {% for id in [
+              'sensor.eui_a840411fa187bc37_mode_id',
+              'sensor.mylsn50sensor_eui_a840411fa187bc37_mode_id',
+              'sensor.mode_id'
+            ] %}
+              {% if id in states and states(id) not in ['unknown','unavailable',''] %}
+                {{ states(id) }}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+
+      # 7) Batterie in % – jetzt NUR aus lsn50_batteriespannung (keine Fremd-Suche mehr)
+      - name: "lsn50_batterie_prozent"
+        unique_id: "lsn50_A840411FA187BC37_battery_pct"
+        state: >-
+          {% set v = states('sensor.lsn50_batteriespannung') | float(0) %}
+          {% set vmin, vmax = 3.20, 3.65 %}
+          {% if v <= 0 %}
+            0
+          {% else %}
+            {% set pct = ((v - vmin) / (vmax - vmin) * 100) | round(0) %}
+            {{ [100, [0, pct] | max] | min }}
+          {% endif %}
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        icon: >-
+          {% set p = states('sensor.lsn50_batterie_prozent') | int(-1) %}
+          {% if p < 0 %}mdi:battery-unknown
+          {% elif p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% else %}mdi:battery-alert
+          {% endif %}
+
+      # 8) Batterie-Status (enum) – voll / ok / bald_tauschen / kritisch
+      - name: "lsn50_batterie_status"
+        unique_id: "lsn50_A840411FA187BC37_battery_state"
+        state: >-
+          {% set p = states('sensor.lsn50_batterie_prozent') | int(-1) %}
+          {% if p < 0 %}unbekannt
+          {% elif p >= 85 %}voll
+          {% elif p >= 60 %}ok
+          {% elif p >= 35 %}bald_tauschen
+          {% else %}kritisch
+          {% endif %}
+        icon: >-
+          {% set p = states('sensor.lsn50_batterie_prozent') | int(-1) %}
+          {% if p < 0 %}mdi:battery-unknown
+          {% elif p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% else %}mdi:battery-alert
+          {% endif %}
+
+  - binary_sensor:
+      # 9) Batterie-Warnung (true = bald_tauschen/ kritisch)
+      - name: "lsn50_batterie_warnung"
+        unique_id: "lsn50_A840411FA187BC37_battery_warning"
+        state: >-
+          {% set st = states('sensor.lsn50_batterie_status') %}
+          {{ 'on' if st in ['bald_tauschen','kritisch'] else 'off' }}
+        device_class: problem
+        icon: >-
+          {% if is_state('binary_sensor.lsn50_batterie_warnung','on') %}
+            mdi:alert
+          {% else %}
+            mdi:check-circle
+          {% endif %}
+
+homeassistant:
+  customize:
+    sensor.lsn50_batteriespannung:
+      friendly_name: "Batteriespannung (LSN50 Keller)"
+    sensor.lsn50_adc_kanal0_spannung:
+      friendly_name: "ADC Kanal 0 (LSN50 Keller)"
+    sensor.lsn50_temperatur_1:
+      friendly_name: "Temperatur 1 (LSN50 Keller)"
+    sensor.lsn50_temperatur_2:
+      friendly_name: "Temperatur 2 (LSN50 Keller)"
+    sensor.lsn50_temperatur_3:
+      friendly_name: "Temperatur 3 (LSN50 Keller)"
+    sensor.lsn50_betriebsmodus:
+      friendly_name: "Betriebsmodus (LSN50)"
+    sensor.lsn50_batterie_prozent:
+      friendly_name: "Batterie % (LSN50 Keller)"
+    sensor.lsn50_batterie_status:
+      friendly_name: "Batterie Status (LSN50 Keller)"
+    binary_sensor.lsn50_batterie_warnung:
+      friendly_name: "Batterie Warnung (LSN50 Keller)"

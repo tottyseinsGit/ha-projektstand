@@ -1,0 +1,190 @@
+# /config/packages/pv_buffer_preheat_closed_loop.yaml
+#
+# PV→Heizpuffer mit Rückkopplung auf reale Sensoren (ESPAltherma)
+# Nutzt Vorlauf (R1T), Rücklauf (R4T), Durchfluss, DHW-Ventilstatus zur stufigen Regelung.
+# Steuert: climate.altherma_leaving_water_offset  (absolute Vorlauf-Soll ODER Offset je nach Gerät)
+#
+input_boolean:
+  pv_buffer_preheat_enable:
+    name: "PV→Heizpuffer aktiv (Closed-Loop)"
+    icon: mdi:radiator
+
+input_number:
+  pv_buffer_target_c:
+    name: "PV→Heizpuffer: Ziel-Vorlauf [°C]"
+    min: 28
+    max: 45
+    step: 1
+    unit_of_measurement: "°C"
+    initial: 36
+  pv_buffer_step_c:
+    name: "PV→Heizpuffer: Schrittweite [°C]"
+    min: 1
+    max: 3
+    step: 1
+    unit_of_measurement: "°C"
+    initial: 2
+  pv_buffer_step_period_min:
+    name: "PV→Heizpuffer: Schritt-Intervall [min]"
+    min: 3
+    max: 15
+    step: 1
+    unit_of_measurement: "min"
+    initial: 5
+  pv_buffer_min_flow_lmin:
+    name: "PV→Heizpuffer: Mindest-Durchfluss [L/min]"
+    min: 3
+    max: 40
+    step: 0.5
+    unit_of_measurement: "L/min"
+    initial: 8
+  pv_buffer_min_delta_k:
+    name: "PV→Heizpuffer: min. ΔT (Vorlauf-Rücklauf) [K]"
+    min: 0.5
+    max: 10
+    step: 0.5
+    unit_of_measurement: "K"
+    initial: 2
+  pv_buffer_max_runtime_min:
+    name: "PV→Heizpuffer: Max-Laufzeit [min]"
+    min: 15
+    max: 240
+    step: 5
+    unit_of_measurement: "min"
+    initial: 120
+
+template:
+  - sensor:
+      # Export-Leistung positiv (0 bei Import)
+      - name: "grid_export_power_w"
+        unique_id: grid_export_power_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_grid_power_sum_w') | float(0) %}
+          {{ (0 - p) if p < 0 else 0 }}
+
+      # ΔT und thermische Leistung (kW) aus Vorlauf/Rücklauf & Durchfluss
+      - name: "altherma_delta_t_k"
+        unique_id: altherma_delta_t_k
+        unit_of_measurement: "K"
+        device_class: temperature
+        state_class: measurement
+        state: >
+          {% set vl = states('sensor.altherma_r1t_wasser_vorlauf_nach_pwt') | float(0) %}
+          {% set rl = states('sensor.altherma_r4t_wasser_ruecklauf_vor_pwt') | float(0) %}
+          {{ (vl - rl) | round(2) }}
+
+      - name: "altherma_thermal_power_kw"
+        unique_id: altherma_thermal_power_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set f = states('sensor.altherma_durchfluss_lmin') | float(0) %}
+          {% set dT = states('sensor.altherma_delta_t_k') | float(0) %}
+          {{ (f * dT * 4186 / 60 / 1000) | round(2) }}
+        attributes:
+          formula: "Pth(kW) = flow(L/min)/60 * 4186 * ΔT / 1000"
+
+  - binary_sensor:
+      - name: "pv_surplus_enough_for_buffer"
+        unique_id: pv_surplus_enough_for_buffer
+        state: >
+          {% set exp = states('sensor.grid_export_power_w') | float(0) %}
+          {{ exp >= 1500 }}
+      - name: "dhw_active_valve"
+        unique_id: dhw_active_valve
+        state: "{{ is_state('binary_sensor.altherma_3_wege_ventil_dhw', 'on') }}"
+
+script:
+  pv_buffer_ramp_closed_loop:
+    mode: restart
+    sequence:
+      - variables:
+          t_target: "{{ states('input_number.pv_buffer_target_c') | float(36) }}"
+          step_c:   "{{ states('input_number.pv_buffer_step_c')   | float(2) }}"
+          wait_m:   "{{ states('input_number.pv_buffer_step_period_min') | int(5) }}"
+          min_flow: "{{ states('input_number.pv_buffer_min_flow_lmin') | float(8) }}"
+          min_dt:   "{{ states('input_number.pv_buffer_min_delta_k') | float(2) }}"
+          max_m:    "{{ states('input_number.pv_buffer_max_runtime_min') | int(120) }}"
+          max_iter: "{{ ( (states('input_number.pv_buffer_max_runtime_min') | int(120)) /
+                           (states('input_number.pv_buffer_step_period_min') | int(5)) ) | int }}"
+      - repeat:
+          while:
+            # Laufzeitbegrenzung über max_iter
+            - condition: template
+              value_template: "{{ repeat.index <= max_iter }}"
+            # Enable an
+            - condition: state
+              entity_id: input_boolean.pv_buffer_preheat_enable
+              state: "on"
+            # PV-Überschuss vorhanden
+            - condition: state
+              entity_id: binary_sensor.pv_surplus_enough_for_buffer
+              state: "on"
+            # Kein Netzbezug (Import)
+            - condition: template
+              value_template: "{{ states('sensor.victron_grid_power_sum_w') | float(0) < 0 }}"
+            # Mindestdurchfluss
+            - condition: template
+              value_template: "{{ states('sensor.altherma_durchfluss_lmin') | float(0) > min_flow }}"
+            # Mindest-ΔT
+            - condition: template
+              value_template: "{{ states('sensor.altherma_delta_t_k') | float(0) >= min_dt }}"
+            # Kein DHW-Betrieb (Ventil aus)
+            - condition: state
+              entity_id: binary_sensor.dhw_active_valve
+              state: "off"
+          sequence:
+            - variables:
+                cur: "{{ state_attr('climate.altherma_leaving_water_offset','temperature') | float(32) }}"
+                new: "{{ [cur + step_c, t_target] | min }}"
+            - service: climate.set_temperature
+              target: { entity_id: climate.altherma_leaving_water_offset }
+              data: { temperature: "{{ new }}" }
+            - delay:
+                minutes: "{{ wait_m }}"
+
+automation:
+  - id: pv_buffer_start_closed_loop
+    alias: "PV→Heizpuffer (Closed-Loop): Start"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.pv_surplus_enough_for_buffer
+        to: "on"
+        for: { minutes: 5 }
+    condition:
+      - condition: state
+        entity_id: input_boolean.pv_buffer_preheat_enable
+        state: "on"
+      - condition: numeric_state
+        entity_id: sensor.victron_grid_power_sum_w
+        below: 0
+      - condition: state
+        entity_id: binary_sensor.dhw_active_valve
+        state: "off"
+    action:
+      - service: script.pv_buffer_ramp_closed_loop
+
+  - id: pv_buffer_stop_closed_loop
+    alias: "PV→Heizpuffer (Closed-Loop): Stop"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.pv_surplus_enough_for_buffer
+        to: "off"
+        for: { minutes: 3 }
+      - platform: numeric_state
+        entity_id: sensor.victron_grid_power_sum_w
+        above: 0
+        for: { minutes: 2 }
+      - platform: state
+        entity_id: binary_sensor.dhw_active_valve
+        to: "on"
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.altherma_leaving_water_offset }
+        data: { temperature: 32 }   # Wenn Offset: hier ggf. 0 statt 32

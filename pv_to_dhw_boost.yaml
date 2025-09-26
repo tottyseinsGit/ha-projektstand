@@ -1,0 +1,160 @@
+# /config/packages/pv_to_dhw_boost.yaml
+#
+# PV-Überschuss → Warmwasserspeicher laden (Daikin Altherma)
+# Voraussetzung:
+#   - water_heater.altherma (DHW) ist steuerbar
+#   - sensor.victron_grid_power_sum_w existiert (Summe L1+L2+L3; + = Import, - = Export)
+#
+# Funktionsweise:
+#   - Wenn stabiler Export (>= Schwelle) und Enable=ON → WW-Solltemp auf Boost-Temperatur anheben.
+#   - Fällt Überschuss weg → auf Normaltemperatur zurückstellen.
+#   - Schutz: Start nur bei Export; Abbruch wenn Import (>0 W) anhält.
+
+input_boolean:
+  pv_to_dhw_enable:
+    name: "PV→DHW Boost aktiv"
+    icon: mdi:water-boiler
+
+input_number:
+  pv_to_dhw_min_surplus_w:
+    name: "PV→DHW: Mindest-Überschuss [W]"
+    min: 200
+    max: 10000
+    step: 100
+    unit_of_measurement: "W"
+    icon: mdi:flash
+    initial: 1500
+
+  pv_to_dhw_boost_temp_c:
+    name: "PV→DHW: Boost-Temperatur [°C]"
+    min: 40
+    max: 65
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+    initial: 55
+
+  pv_to_dhw_normal_temp_c:
+    name: "PV→DHW: Normal-Temperatur [°C]"
+    min: 35
+    max: 60
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer-low
+    initial: 45
+
+  pv_to_dhw_min_on_min:
+    name: "PV→DHW: Mindestdauer Überschuss [min]"
+    min: 1
+    max: 30
+    step: 1
+    unit_of_measurement: "min"
+    icon: mdi:timer
+    initial: 5
+
+template:
+  - sensor:
+      # Export-Leistung (nur positive Werte = tatsächlicher Überschuss)
+      - name: "grid_export_power_w"
+        unique_id: grid_export_power_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_grid_power_sum_w') | float(0) %}
+          {{ (0 - p) if p < 0 else 0 }}
+        attributes:
+          source: sensor.victron_grid_power_sum_w
+
+  - binary_sensor:
+      # Überschuss vorhanden? (Export >= konfigurierter Schwellenwert)
+      - name: "pv_surplus_enough"
+        unique_id: pv_surplus_enough
+        state: >
+          {% set exp = states('sensor.grid_export_power_w') | float(0) %}
+          {% set thr = states('input_number.pv_to_dhw_min_surplus_w') | float(0) %}
+          {{ exp >= thr }}
+        attributes:
+          export_w: "{{ states('sensor.grid_export_power_w') }}"
+          threshold_w: "{{ states('input_number.pv_to_dhw_min_surplus_w') }}"
+
+automation:
+  # START: Boost, wenn Überschuss stabil anliegt
+  - id: pv_to_dhw_start_boost
+    alias: "PV→DHW: Start Boost (stabiler Überschuss)"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.pv_surplus_enough
+        to: "on"
+        for:
+          minutes: "{{ states('input_number.pv_to_dhw_min_on_min') | int(5) }}"
+    condition:
+      - condition: state
+        entity_id: input_boolean.pv_to_dhw_enable
+        state: "on"
+      # Sicherheitsbedingung: Kein Import
+      - condition: numeric_state
+        entity_id: sensor.victron_grid_power_sum_w
+        below: 0
+    action:
+      - variables:
+          t_boost: "{{ states('input_number.pv_to_dhw_boost_temp_c') | int(55) }}"
+      - service: water_heater.set_temperature
+        target:
+          entity_id: water_heater.altherma
+        data:
+          temperature: "{{ t_boost }}"
+      - service: logbook.log
+        data:
+          name: "PV→DHW"
+          message: "Boost gestartet → WW-Solltemp {{ t_boost }} °C (Export={{ states('sensor.grid_export_power_w') }} W)."
+
+  # STOP: Wenn Überschuss weg (oder Import), auf Normal zurück
+  - id: pv_to_dhw_stop_boost
+    alias: "PV→DHW: Stop Boost (Überschuss weg)"
+    mode: single
+    trigger:
+      # Export fällt unter Schwelle (mind. 3 min)
+      - platform: state
+        entity_id: binary_sensor.pv_surplus_enough
+        to: "off"
+        for:
+          minutes: 3
+      # oder es gibt anhaltenden Import (positiv) mind. 2 min
+      - platform: numeric_state
+        entity_id: sensor.victron_grid_power_sum_w
+        above: 0
+        for:
+          minutes: 2
+    condition: []
+    action:
+      - variables:
+          t_norm: "{{ states('input_number.pv_to_dhw_normal_temp_c') | int(45) }}"
+      - service: water_heater.set_temperature
+        target:
+          entity_id: water_heater.altherma
+        data:
+          temperature: "{{ t_norm }}"
+      - service: logbook.log
+        data:
+          name: "PV→DHW"
+          message: "Boost beendet → WW-Solltemp {{ t_norm }} °C (Export/Überschuss nicht mehr vorhanden)."
+
+# Optional: Wenn du statt DHW lieber den Heizkreis anheben willst (Pufferladung),
+# kannst du climate.altherma_leaving_water_offset nutzen.
+# HINWEIS: Das ist ein Offest zur Heizkurve; nur aktivieren, wenn gewollt.
+# Beispiel-Aktionen (deaktiviert):
+#
+#      - service: climate.set_temperature
+#        target:
+#          entity_id: climate.altherma_leaving_water_offset
+#        data:
+#          temperature: 45   # Offset-Interpretation beachten
+#
+# und zum Zurücksetzen:
+#      - service: climate.set_temperature
+#        target:
+#          entity_id: climate.altherma_leaving_water_offset
+#        data:
+#          temperature: 45

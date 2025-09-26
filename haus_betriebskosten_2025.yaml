@@ -1,0 +1,353 @@
+# /config/packages/haus_betriebskosten_2025.yaml
+#
+# Jahr: 2025
+# Zweck: Zentrale Definition der Haus-Betriebskosten (Preise/Grundpreise) und abgeleitete Monatssummen.
+# Regeln (aus Nutzer-Vorgaben übernommen):
+# - Jahresbezogene Werte gehören in diese Datei (haus_betriebskosten_YYYY.yaml).
+# - Namensschema: <domain>.<area>_<device>_<property>[_<scope>] (ASCII, snake_case).
+# - friendly_name: Deutsch, Format „Raum – Gerät: Messgröße [Einheit]“ (hier: „Haus – Kosten: …“).
+# - Einheiten: Strom-AP in €/kWh, Wasser-/Abwasser-AP in €/m³, Grundpreise in €/Monat, Jahreswerte in €/Jahr.
+#
+# Änderung (klarer benannt nach deiner Anmerkung):
+# - Wasser: explizit Grundpreis (€/Monat) UND Arbeitspreis (€/m³).
+# - Abwasser: explizit Grundpreis (€/Monat) UND Arbeitspreis (€/m³).
+# - Fixkosten-Monatssumme berücksichtigt Strom-, Wasser- und Abwasser-Grundpreise.
+#
+# /config/packages/40_kosten_2025_haus.yaml
+# Betriebskosten 2025 – Eingaben (nur 2025) + HAUS-Stromkostenberechnung + Wärmepumpe (eigener Zähler)
+# - Alle input_number als Box (keine Slider)
+# - Geld: step 0.01  | Mengen (kWh/m³): step 0.01 | Preise (€/kWh, €/m³): feiner, falls nötig
+# - Keine Verteilungslogik in dieser Datei
+
+# /config/packages/40_kosten_2025_haus.yaml
+# Betriebskosten 2025 – Eingaben (nur 2025) + HAUS-Stromkostenberechnung + Wärmepumpe (eigener Zähler)
+# - Alle input_number als Box (keine Slider)
+# - Geld: step 0.01  | Mengen (kWh/m³): step 0.01 | Preise (€/kWh, €/m³): fein, falls nötig
+# - Keine Verteilungslogik in dieser Datei
+
+input_number:
+  # --- Heizung & Warmwasser ---
+  haus_betriebskosten_heizung_ww_summe_eur:
+    name: "Haus – Betriebskosten: Heizung/Warmwasser Summe [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_heizung_ww_zaehlerstand:
+    name: "Haus – Betriebskosten: Heizung/Warmwasser Zählerstand"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+
+  # --- EV-Charger ---
+  haus_betriebskosten_ev_charger_zaehlerstand_kwh:
+    name: "Haus – Betriebskosten: EV-Charger Zählerstand [kWh]"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "kWh"
+
+  # --- Wasser (Frischwasser) ---
+  haus_betriebskosten_wasser_grundpreis_eur:
+    name: "Haus – Betriebskosten: Grundpreis Wasser [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_wasser_frisch_m3:
+    name: "Haus – Betriebskosten: Frischwasser [m³]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m³"
+
+  # --- Abwasser ---
+  haus_betriebskosten_abwasser_grundpreis_eur:
+    name: "Haus – Betriebskosten: Grundpreis Abwasser [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_abwasser_m3:
+    name: "Haus – Betriebskosten: Abwasser [m³]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m³"
+
+  # --- Wartung / Services ---
+  haus_betriebskosten_wartung_heizung_eur:
+    name: "Haus – Betriebskosten: Wartung Heizung [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_abrechnungsservice_eur:
+    name: "Haus – Betriebskosten: Abrechnungsservice [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  # --- Umlagefähige Kosten ---
+  haus_betriebskosten_grundsteuer_eur:
+    name: "Haus – Betriebskosten: Grundsteuer [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_versicherung_eur:
+    name: "Haus – Betriebskosten: Versicherung [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_muellabfuhr_eur:
+    name: "Haus – Betriebskosten: Müllabfuhr [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_niederschlagswasser_eur:
+    name: "Haus – Betriebskosten: Niederschlagswasser [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  # --- Verteilgrößen (Haus, 2025-relevant) ---
+  haus_betriebskosten_bewohner_anzahl:
+    name: "Haus – Betriebskosten: Anzahl der Bewohner [Personen]"
+    min: 0
+    max: 999
+    step: 1
+    mode: box
+    unit_of_measurement: "Personen"
+
+  haus_betriebskosten_nutzflaeche_m2_gesamt:
+    name: "Haus – Betriebskosten: Nutzfläche gesamt [m²]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m²"
+
+  # --- Solarthermie (optional) ---
+  haus_betriebskosten_solarthermie_ertrag:
+    name: "Haus – Betriebskosten: Ertrag Solarthermie"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+
+  # --- STROM ALLGEMEIN (für Nebenkosten) ---
+  haus_betriebskosten_strom_grundgebuehr_2025:
+    name: "Haus – Betriebskosten: Strom Grundgebühr 2025 [€/Jahr]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025:
+    name: "Haus – Betriebskosten: Hausstrom Zählerstand 2025 [kWh]"
+    min: 0
+    max: 10000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "kWh"
+
+  haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025:
+    name: "Haus – Betriebskosten: Hausstrom Durchschnittspreis Tibber 2025 [€/kWh]"
+    min: 0
+    max: 10
+    step: 0.0001
+    mode: box
+    unit_of_measurement: "€/kWh"
+
+  # --- WÄRMEPUMPE (eigener Zähler, dynamischer Preis) ---
+  wp_strom_grundgebuehr_eur_2025:
+    name: "WP – Grundgebühr Strom 2025 [€/Jahr]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  wp_messstellenentgelt_eur_2025:
+    name: "WP – Messstellenentgelt 2025 [€/Jahr]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  wp_netzgrundpreis_eur_2025:
+    name: "WP – Netzgrundpreis 2025 [€/Jahr]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  wp_aufschlag_eur_kwh_2025:
+    name: "WP – Aufschlag je kWh 2025 [€/kWh]"
+    min: 0
+    max: 2
+    step: 0.0001
+    mode: box
+    unit_of_measurement: "€/kWh"
+
+# ------------------------------------------
+# TEMPLATE-SENSOREN (Allgemeinstrom + WP)
+# ------------------------------------------
+template:
+  - sensor:
+      # Variable Stromkosten (€/Jahr) = Verbrauch [kWh] × Durchschnittspreis [€/kWh]
+      - name: haus_allgemeinstrom_kosten_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set v = states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025') | float(0) %}
+          {% set p = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
+          {% if v > 0 and p > 0 %}
+            {{ (v * p) | round(2) }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+        attributes:
+          friendly_name: "Haus – Allgemeinstrom Kosten 2025 [€/Jahr]"
+
+      # Gesamte Haus-Stromkosten = variable Kosten + Grundgebühr
+      - name: haus_allgemeinstrom_gesamt_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set var = states('sensor.haus_allgemeinstrom_kosten_eur_2025') | float(0) %}
+          {% set fix = states('input_number.haus_betriebskosten_strom_grundgebuehr_2025') | float(0) %}
+          {{ (var + fix) | round(2) }}
+        attributes:
+          friendly_name: "Haus – Allgemeinstrom gesamt 2025 [€]"
+
+      # ---- WP: Effektiver Preis (€/kWh) = dynamischer Preis + optionaler Aufschlag
+      - name: wp_preis_effektiv_eur_kwh_2025
+        unique_id: wp_preis_effektiv_eur_kwh_2025
+        unit_of_measurement: "€/kWh"
+        device_class: monetary
+        state_class: measurement
+        state: >-
+          {% set dyn = states('sensor.epex_spot_data_net_price') | float(0) %}
+          {% set add = states('input_number.wp_aufschlag_eur_kwh_2025') | float(0) %}
+          {{ (dyn + add) | round(6) }}
+
+      # Platzhalter-Sensor: Leistung der WP (W) aus Derivative unten
+      - name: wp_leistung_w
+        unique_id: wp_leistung_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >-
+          {{ states('sensor.wp_leistung_berechnet_w') }}
+
+      # Kostenrate (€/h) = Leistung (kW) × Preis (€/kWh)
+      - name: wp_kostenrate_eur_h_2025
+        unique_id: wp_kostenrate_eur_h_2025
+        unit_of_measurement: "€/h"
+        device_class: monetary
+        state_class: measurement
+        state: >-
+          {% set p_w = states('sensor.wp_leistung_berechnet_w') | float(0) %}
+          {% set p_kw = p_w / 1000 %}
+          {% set price = states('sensor.wp_preis_effektiv_eur_kwh_2025') | float(0) %}
+          {{ (p_kw * price) | round(6) }}
+
+      # Fixkosten-Summe (€/Jahr) für WP
+      - name: wp_fixkosten_gesamt_eur_2025
+        unique_id: wp_fixkosten_gesamt_eur_2025
+        unit_of_measurement: "€"
+        device_class: monetary
+        state_class: measurement
+        state: >-
+          {% set g = states('input_number.wp_strom_grundgebuehr_eur_2025') | float(0) %}
+          {% set m = states('input_number.wp_messstellenentgelt_eur_2025') | float(0) %}
+          {% set n = states('input_number.wp_netzgrundpreis_eur_2025') | float(0) %}
+          {{ (g + m + n) | round(2) }}
+
+      # Gesamtkosten WP (variabel + fix)
+      - name: wp_kosten_gesamt_eur_2025
+        unique_id: wp_kosten_gesamt_eur_2025
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set var = states('sensor.wp_kosten_variabel_eur_2025') | float(0) %}
+          {% set fix = states('sensor.wp_fixkosten_gesamt_eur_2025') | float(0) %}
+          {{ (var + fix) | round(2) }}
+        attributes:
+          friendly_name: "WP – Gesamtkosten 2025 [€]"
+          variabel_eur: "{{ states('sensor.wp_kosten_variabel_eur_2025') }}"
+          fix_eur: "{{ states('sensor.wp_fixkosten_gesamt_eur_2025') }}"
+          preis_sensor: "sensor.epex_spot_data_net_price + input_number.wp_aufschlag_eur_kwh_2025"
+          energie_sensor: "sensor.wp_energy_total_kwh"
+
+# ------------------------------------------
+# SENSOR-PLATTFORMEN: DERIVATIVE & INTEGRATION
+# (So erwartet es HA in Packages, damit korrekt gemerged wird)
+# ------------------------------------------
+sensor:
+  # Aus Gesamt-kWh → Leistung (W)
+  - platform: derivative
+    name: "wp_leistung_berechnet_w"
+    #unique_id: wp_leistung_berechnet_w
+    source: sensor.wp_energy_total_kwh    # <<< ANPASSEN: dein WP-Gesamtzähler (kWh, total_increasing)
+    unit_time: h
+    unit: W
+    time_window: "00:05:00"
+    round: 2
+
+  # Kostenrate (€/h) integrieren → variable Kosten (€)
+  - platform: integration
+    name: "wp_kosten_variabel_eur_2025"
+    #unique_id: wp_kosten_variabel_eur_2025
+    source: sensor.wp_kostenrate_eur_h_2025
+    unit_time: h
+    method: trapezoidal
+    #unit_prefix: none
+    round: 2
+
+# ------------------------------------------
+# UTILITY METER – Jahres/Monatszähler (Energie & Kosten)
+# ------------------------------------------
+utility_meter:
+  # Energie (WP), aus Gesamtzähler
+  wp_energie_jahr_2025:
+    source: sensor.wp_energy_total_kwh     # <<< ANPASSEN
+    cycle: yearly
+  wp_energie_monat:
+    source: sensor.wp_energy_total_kwh     # <<< ANPASSEN
+    cycle: monthly
+
+  # Variable Kosten (€) aus Integration
+  wp_kosten_variabel_jahr_2025:
+    source: sensor.wp_kosten_variabel_eur_2025
+    cycle: yearly
+  wp_kosten_variabel_monat:
+    source: sensor.wp_kosten_variabel_eur_2025
+    cycle: monthly

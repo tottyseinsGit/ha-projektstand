@@ -1,0 +1,107 @@
+# /config/packages/altherma_low_pressure.yaml
+# Daikin Altherma – Wasserdruck-Überwachung (ohne Automationen, mit Test-Skripten)
+# Verwendete Entities:
+#   - Druck:    sensor.wasserdruck_2                 (bar)
+#   - Strömung: binary_sensor.altherma_stromung_ok   ('on' = OK, 'off' = Problem, 'unavailable' = unbekannt)
+# Hinweis: Die Automationen wurden in die UI migriert – hier KEINE automation:-Sektion mehr.
+
+input_number:
+  altherma_wasserdruck_min_bar:
+    name: "Keller – Altherma: Mindestwasserdruck [bar]"
+    min: 0.30
+    max: 2.50
+    step: 0.05
+    unit_of_measurement: "bar"
+    initial: 0.80
+
+template:
+  - binary_sensor:
+      # 1) Druck zu niedrig (TRUE = Problem), entprellt, robust gegen unknown/unavailable
+      - name: "keller_altherma_wasserdruck_niedrig"
+        unique_id: keller_altherma_wasserdruck_niedrig
+        device_class: problem
+        availability: >
+          {{ states('sensor.wasserdruck_2') not in ['unknown','unavailable',''] }}
+        state: >
+          {% set thr = states('input_number.altherma_wasserdruck_min_bar')|float(0.8) %}
+          {% set p = states('sensor.wasserdruck_2')|float(0) %}
+          {{ p < thr }}
+        delay_on: { minutes: 1 }
+        delay_off: { minutes: 1 }
+        attributes:
+          friendly_name: "Keller – Altherma: Wasserdruck zu niedrig"
+          druck_bar: "{{ states('sensor.wasserdruck_2') }}"
+          schwelle_bar: "{{ states('input_number.altherma_wasserdruck_min_bar') }}"
+
+      # 2) Kombi-Problem: Druck < Schwelle ODER Strömung = off
+      #    'unavailable/unknown' der Strömung wird NICHT als Problem gezählt.
+      - name: "keller_altherma_druck_oder_stroemung_problem"
+        unique_id: keller_altherma_druck_oder_stroemung_problem
+        device_class: problem
+        availability: >
+          {{ states('sensor.wasserdruck_2') not in ['unknown','unavailable','']
+             or states('binary_sensor.altherma_stromung_ok') in ['on','off'] }}
+        state: >
+          {% set thr = states('input_number.altherma_wasserdruck_min_bar')|float(0.8) %}
+          {% set ps = states('sensor.wasserdruck_2') %}
+          {% set p  = ps|float if ps not in ['unknown','unavailable',''] else none %}
+          {% set low = (p is not none and p < thr) %}
+          {% set fs = states('binary_sensor.altherma_stromung_ok') %}
+          {% set flow_off = (fs == 'off') %}
+          {{ low or flow_off }}
+        delay_on: { minutes: 1 }
+        delay_off: { minutes: 1 }
+        attributes:
+          friendly_name: "Keller – Altherma: Druck ODER Strömung Problem"
+          druck_bar: >
+            {% set ps = states('sensor.wasserdruck_2') %}
+            {{ ps if ps not in ['unknown','unavailable',''] else 'unbekannt' }}
+          schwelle_bar: "{{ states('input_number.altherma_wasserdruck_min_bar') }}"
+          stroemung_status: >
+            {% set fs = states('binary_sensor.altherma_stromung_ok') %}
+            {% if fs == 'on' %}OK{% elif fs == 'off' %}Problem{% else %}unbekannt{% endif %}
+
+script:
+  # Manuell PROBLEM-Test senden
+  altherma_telegram_test_alarm:
+    alias: "Altherma – Telegram: Test PROBLEM"
+    mode: single
+    sequence:
+      - service: telegram_bot.send_message
+        data:
+          target: [8485266911]   # deine Chat-ID
+          message: >
+            🚨 <b>Altherma – Druck/Strömung PROBLEM (Test)</b>
+            🕒 {{ now().strftime("%d.%m.%Y %H:%M") }}
+            🔧 Druck: {{
+              states('sensor.wasserdruck_2')
+              if states('sensor.wasserdruck_2') not in ['unknown','unavailable','']
+              else 'unbekannt'
+            }} bar
+            📏 Schwelle: {{ states('input_number.altherma_wasserdruck_min_bar') }} bar
+            💨 Strömung: {%
+              set fs = states('binary_sensor.altherma_stromung_ok') -%}
+              {%- if fs == 'on' -%}OK{%- elif fs == 'off' -%}Problem{%- else -%}unbekannt{%- endif -%}
+          parse_mode: html
+
+  # Manuell OK-Test senden
+  altherma_telegram_test_ok:
+    alias: "Altherma – Telegram: Test OK"
+    mode: single
+    sequence:
+      - service: telegram_bot.send_message
+        data:
+          target: [8485266911]
+          message: >
+            ✅ <b>Altherma – Druck/Strömung wieder OK (Test)</b>
+            🕒 {{ now().strftime("%d.%m.%Y %H:%M") }}
+            🔧 Druck: {{
+              states('sensor.wasserdruck_2')
+              if states('sensor.wasserdruck_2') not in ['unknown','unavailable','']
+              else 'unbekannt'
+            }} bar
+            📏 Schwelle: {{ states('input_number.altherma_wasserdruck_min_bar') }} bar
+            💨 Strömung: {%
+              set fs = states('binary_sensor.altherma_stromung_ok') -%}
+              {%- if fs == 'on' -%}OK{%- elif fs == 'off' -%}Problem{%- else -%}unbekannt{%- endif -%}
+          parse_mode: html

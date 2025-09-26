@@ -1,0 +1,93 @@
+# /config/packages/espaltherma_energy.yaml
+# Einfache, konsolidierte Energy-Konfiguration:
+# - Gefilterte thermische Leistung (WP aus ⇒ 0 W)
+# - Integration (W→kWh) für elektrisch/thermisch
+# - Rollende 24h-Änderung (Statistics)
+# - Utility Meter: Tag / Monat / Jahr (deutsche IDs)
+
+template:
+  - sensor:
+      - name: "keller_altherma_thermische_leistung_w_filtered"
+        unique_id: keller_altherma_thermische_leistung_w_filtered
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        availability: >
+          {{ states('sensor.keller_altherma_elektrische_leistung_w') not in ['unknown','unavailable','']
+             and states('sensor.keller_altherma_thermische_leistung_w') not in ['unknown','unavailable',''] }}
+        state: >
+          {% set SCHWELLE_WP_AUS_W = 100 %}
+          {% set pel = states('sensor.keller_altherma_elektrische_leistung_w')|float(0) %}
+          {% set pth = states('sensor.keller_altherma_thermische_leistung_w')|float(0) %}
+          {{ (pth if pel >= SCHWELLE_WP_AUS_W else 0) | round(0) }}
+
+sensor:
+  # Totals (stetig steigend) – direkt aus den Leistungen
+  - platform: integration
+    name: "keller_altherma_electric_energy_kwh_total"
+    source: sensor.keller_altherma_elektrische_leistung_w
+    method: trapezoidal
+    unit_prefix: k
+    round: 3
+
+  - platform: integration
+    name: "keller_altherma_heat_energy_kwh_total"
+    source: sensor.keller_altherma_thermische_leistung_w_filtered
+    method: trapezoidal
+    unit_prefix: k
+    round: 3
+
+  # Rollendes 24h-Delta (nicht kalendergebunden)
+  - platform: statistics
+    name: "keller_altherma_electric_kwh_24h"
+    entity_id: sensor.keller_altherma_electric_energy_kwh_total
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 500
+    precision: 3
+
+  - platform: statistics
+    name: "keller_altherma_heat_kwh_24h"
+    entity_id: sensor.keller_altherma_heat_energy_kwh_total
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 500
+    precision: 3
+
+utility_meter:
+  # Kalendergebundene Zähler aus den Totals (Tag/Monat/Jahr)
+  # elektrisch
+  keller_altherma_elektrische_energie_heute_kwh:
+    name: "Keller – Altherma: elektrische Energie heute [kWh]"
+    source: sensor.keller_altherma_electric_energy_kwh_total
+    cycle: daily
+    delta_values: true
+  keller_altherma_elektrische_energie_monat_kwh:
+    name: "Keller – Altherma: elektrische Energie Monat [kWh]"
+    source: sensor.keller_altherma_electric_energy_kwh_total
+    cycle: monthly
+    delta_values: true
+  keller_altherma_elektrische_energie_jahr_kwh:
+    name: "Keller – Altherma: elektrische Energie Jahr [kWh]"
+    source: sensor.keller_altherma_electric_energy_kwh_total
+    cycle: yearly
+    delta_values: true
+
+  # thermisch
+  keller_altherma_thermische_energie_heute_kwh:
+    name: "Keller – Altherma: thermische Energie heute [kWh]"
+    source: sensor.keller_altherma_heat_energy_kwh_total
+    cycle: daily
+    delta_values: true
+  keller_altherma_thermische_energie_monat_kwh:
+    name: "Keller – Altherma: thermische Energie Monat [kWh]"
+    source: sensor.keller_altherma_heat_energy_kwh_total
+    cycle: monthly
+    delta_values: true
+  keller_altherma_thermische_energie_jahr_kwh:
+    name: "Keller – Altherma: thermische Energie Jahr [kWh]"
+    source: sensor.keller_altherma_heat_energy_kwh_total
+    cycle: yearly
+    delta_values: true

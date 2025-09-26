@@ -1,0 +1,11 @@
+template:
+  - sensor:
+      - name: solarthermie_energy_ytd
+        unique_id: wmz_94857143_energy_ytd_v4   # <-- NEU
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: >
+          {% set total = states('sensor.wmz_total_kwh') | float(0) %}
+          {% set target = states('sensor.wmz_target_kwh') | float(0) %}
+          {{ (total - target) | round(2) }}

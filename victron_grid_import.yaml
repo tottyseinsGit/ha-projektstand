@@ -1,0 +1,83 @@
+# /config/packages/victron_grid_import.yaml
+#
+# Summiert die drei Phasen und zählt NUR positive Leistung (Netzbezug) als Energie hoch.
+# Voraussetzungen: Die drei Quell-Sensoren liefern Leistung in Watt.
+#   sensor.victron_grid_l1_power_31
+#   sensor.victron_grid_l2_power_31
+#   sensor.victron_grid_l3_power_31
+#
+# Hinweis Vorzeichen:
+# - Falls bei dir POSITIV = Einspeisung (Export) bedeutet, invertiere im Sensor
+#   "Victron – Netzbezug (positiv) [W]" die Variable p:  {% set p = ( ... ) * -1 %}
+
+template:
+  - sensor:
+      # --- Summe der Grid-Leistung (W) über alle 3 Phasen ---
+      - name: "Victron – Grid-Leistung Summe [W]"
+        unique_id: victron_grid_power_sum_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >
+          {% set l1 = states('sensor.victron_grid_l1_power_31') | float(0) %}
+          {% set l2 = states('sensor.victron_grid_l2_power_31') | float(0) %}
+          {% set l3 = states('sensor.victron_grid_l3_power_31') | float(0) %}
+          {{ (l1 + l2 + l3) | round(0) }}
+        attributes:
+          l1_w: "{{ states('sensor.victron_grid_l1_power_31') | float(0) }}"
+          l2_w: "{{ states('sensor.victron_grid_l2_power_31') | float(0) }}"
+          l3_w: "{{ states('sensor.victron_grid_l3_power_31') | float(0) }}"
+        availability: >
+          {{ not (
+            states('sensor.victron_grid_l1_power_31') in ['unknown','unavailable','none'] or
+            states('sensor.victron_grid_l2_power_31') in ['unknown','unavailable','none'] or
+            states('sensor.victron_grid_l3_power_31') in ['unknown','unavailable','none']
+          ) }}
+
+      # --- Nur positive Summe als Netzbezug (W) zählen; negative = 0 ---
+      - name: "Victron – Netzbezug (positiv) [W]"
+        unique_id: victron_grid_import_power_w
+        device_class: power
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_grid_power_sum_w') | float(0) %}
+          {{ [p, 0] | max | round(0) }}
+        attributes:
+          source_entity: "sensor.victron_grid_power_sum_w"
+          logic: "only positive values counted as import (consumption); negative -> 0"
+        availability: >
+          {{ states('sensor.victron_grid_power_sum_w') not in ['unknown','unavailable','none'] }}
+
+sensor:
+  # --- Integration: Leistung (W) -> Energie (kWh) für Netzbezug ---
+  - platform: integration
+    name: "Victron – Netzverbrauch Energie [kWh]"
+    source: sensor.victron_grid_import_power_w
+    method: trapezoidal
+    unit_prefix: k
+    round: 3
+
+  # --- 24h rollend: Differenz der letzten 24h (kWh) ---
+  - platform: statistics
+    name: "Victron – Netzverbrauch 24h [kWh]"
+    entity_id: sensor.victron_netzverbrauch_energie_kwh
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 1000
+    precision: 3
+
+utility_meter:
+  victron_netzverbrauch_heute:
+    name: "Netzverbrauch heute [kWh]"
+    source: sensor.victron_netzverbrauch_energie_kwh
+    cycle: daily
+  victron_netzverbrauch_monat:
+    name: "Netzverbrauch Monat [kWh]"
+    source: sensor.victron_netzverbrauch_energie_kwh
+    cycle: monthly
+  victron_netzverbrauch_jahr:
+    name: "Netzverbrauch Jahr [kWh]"
+    source: sensor.victron_netzverbrauch_energie_kwh
+    cycle: yearly

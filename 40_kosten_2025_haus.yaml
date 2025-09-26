@@ -1,0 +1,195 @@
+# /config/packages/40_kosten_2025_haus.yaml
+# Betriebskosten 2025 – Eingaben (nur 2025) + HAUS-Stromkostenberechnung
+# - Alle input_number als Box (keine Slider)
+# - Geld: step 0.01  | Mengen (kWh/m³): step 0.01 | Preise (€/kWh, €/m³): feiner, falls nötig
+# - Keine Verteilungslogik in dieser Datei
+
+input_number:
+  # --- Heizung & Warmwasser ---
+  haus_betriebskosten_heizung_ww_summe_eur:
+    name: "Haus – Betriebskosten: Heizung/Warmwasser Summe [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_heizung_ww_zaehlerstand:
+    name: "Haus – Betriebskosten: Heizung/Warmwasser Zählerstand"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+
+  # --- EV-Charger ---
+  haus_betriebskosten_ev_charger_zaehlerstand_kwh:
+    name: "Haus – Betriebskosten: EV-Charger Zählerstand [kWh]"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "kWh"
+
+  # --- Wasser (Frischwasser) ---
+  haus_betriebskosten_wasser_grundpreis_eur:
+    name: "Haus – Betriebskosten: Grundpreis Wasser [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_wasser_frisch_m3:
+    name: "Haus – Betriebskosten: Frischwasser [m³]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m³"
+
+  # --- Abwasser ---
+  haus_betriebskosten_abwasser_grundpreis_eur:
+    name: "Haus – Betriebskosten: Grundpreis Abwasser [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_abwasser_m3:
+    name: "Haus – Betriebskosten: Abwasser [m³]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m³"
+
+  # --- Wartung / Services ---
+  haus_betriebskosten_wartung_heizung_eur:
+    name: "Haus – Betriebskosten: Wartung Heizung [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_abrechnungsservice_eur:
+    name: "Haus – Betriebskosten: Abrechnungsservice [€]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  # --- Umlagefähige Kosten ---
+  haus_betriebskosten_grundsteuer_eur:
+    name: "Haus – Betriebskosten: Grundsteuer [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_versicherung_eur:
+    name: "Haus – Betriebskosten: Versicherung [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_muellabfuhr_eur:
+    name: "Haus – Betriebskosten: Müllabfuhr [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  haus_betriebskosten_niederschlagswasser_eur:
+    name: "Haus – Betriebskosten: Niederschlagswasser [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  # --- Verteilgrößen (Haus, 2025-relevant) ---
+  haus_betriebskosten_bewohner_anzahl:
+    name: "Haus – Betriebskosten: Anzahl der Bewohner [Personen]"
+    min: 0
+    max: 999
+    step: 1
+    mode: box
+    unit_of_measurement: "Personen"
+
+  haus_betriebskosten_nutzflaeche_m2_gesamt:
+    name: "Haus – Betriebskosten: Nutzfläche gesamt [m²]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m²"
+
+  # --- Solarthermie (optional) ---
+  haus_betriebskosten_solarthermie_ertrag:
+    name: "Haus – Betriebskosten: Ertrag Solarthermie"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+
+  # --- STROM ALLGEMEIN (für Nebenkosten) ---
+  # Jahres-GRUNDGEBÜHR Strom (Tibber + Messstellengebühr + Netzgrundentgelt)
+  haus_betriebskosten_strom_grundgebuehr_2025:
+    name: "Haus – Betriebskosten: Strom Grundgebühr 2025 [€/Jahr]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+  # Jährlicher Hausstrom-Verbrauch (wird automatisch aus Sensor/Utility-Meter gelesen, Fallback bleibt bestehen)
+  haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025:
+    name: "Haus – Betriebskosten: Hausstrom Zählerstand 2025 [kWh]"
+    min: 0
+    max: 10000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "kWh"
+
+  # Durchschnittspreis Tibber 2025 (€/kWh) – höhere Auflösung sinnvoll
+  haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025:
+    name: "Haus – Betriebskosten: Hausstrom Durchschnittspreis Tibber 2025 [€/kWh]"
+    min: 0
+    max: 10
+    step: 0.0001
+    mode: box
+    unit_of_measurement: "€/kWh"
+
+template:
+  - sensor:
+      # Variable Stromkosten (€/Jahr) = Verbrauch [kWh] × Durchschnittspreis [€/kWh]
+      # Verbrauch kommt jetzt aus sensor.hausstrom_kwh_2025 (siehe 30_zaehler_haus.yaml) mit Fallback auf input_number
+      - name: haus_allgemeinstrom_kosten_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set v = states('sensor.hausstrom_kwh_2025') | float(0) %}
+          {% set p = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
+          {% if v > 0 and p > 0 %}
+            {{ (v * p) | round(2) }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+        attributes:
+          friendly_name: "Haus – Allgemeinstrom Kosten 2025 [€/Jahr]"
+
+      # Gesamte Haus-Stromkosten = variable Kosten + Grundgebühr
+      - name: haus_allgemeinstrom_gesamt_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set var = states('sensor.haus_allgemeinstrom_kosten_eur_2025') | float(0) %}
+          {% set fix = states('input_number.haus_betriebskosten_strom_grundgebuehr_2025') | float(0) %}
+          {{ (var + fix) | round(2) }}
+        attributes:
+          friendly_name: "Haus – Allgemeinstrom gesamt 2025 [€]"

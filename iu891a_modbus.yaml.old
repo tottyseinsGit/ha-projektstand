@@ -1,0 +1,22 @@
+# /config/packages/iu891a_modbus.yaml
+# RS485/USB-Adapter: IMST iU891A (CDC-ACM) → stabiler Pfad per by-id
+# Hinweis: Baudrate/Parity/Slave/Registers später nach Gerätehandbuch anpassen.
+
+modbus:
+  - name: rs485_bus              # Hub-Name (snake_case, stabil)
+    type: serial
+    method: rtu
+    port: /dev/serial/by-id/usb-IMST_iU891A_IMS2679-if00
+    baudrate: 9600               # ⇦ bei Bedarf ändern (typisch 9600/19200/38400)
+    stopbits: 1
+    bytesize: 8
+    parity: N                    # N,E,O je nach Gerät
+
+# Optionale Demo-Anzeige, damit du in HA sofort „etwas“ siehst.
+# Später durch echte Modbus-Sensoren ersetzen (holding/input, address, slave, data_type).
+template:
+  - sensor:
+      - name: "rs485_adapter_status"
+        unique_id: rs485_adapter_status
+        state: "aktiv"
+        icon: mdi:usb-port

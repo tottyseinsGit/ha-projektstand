@@ -1,0 +1,97 @@
+# /config/packages/20_mieter_whg02.yaml
+# Mieterstammdaten – Wohnung 02 (zeitlos)
+
+input_text:
+  whg02_mieter_vorname:
+    name: "WHG02 – Vorname"
+    max: 64
+  whg02_mieter_nachname:
+    name: "WHG02 – Nachname"
+    max: 64
+  whg02_phone:
+    name: "WHG02 – Telefon"
+    max: 20
+  whg02_tenant_email:
+    name: "WHG02 – E-Mail"
+    max: 120
+  whg02_notizen:
+    name: "WHG02 – Notizen"
+    max: 240
+
+input_number:
+  whg02_wohnflaeche_m2:
+    name: "WHG02 – Wohnfläche [m²]"
+    min: 0
+    max: 1000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m²"
+  whg02_personen:
+    name: "WHG02 – Personen [Anzahl]"
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    unit_of_measurement: "Personen"
+
+  # Monats-Kosten
+  whg02_miete_kalt_eur_monat:
+    name: "WHG02 – Miete kalt [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg02_voraus_bk_eur_monat:
+    name: "WHG02 – Vorauszahlung Betriebskosten [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg02_voraus_hk_eur_monat:
+    name: "WHG02 – Vorauszahlung Heizung/WW [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg02_voraus_strom_eur_monat:
+    name: "WHG02 – Vorauszahlung Strom [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg02_voraus_ev_charger_eur_monat:
+    name: "WHG02 – Vorauszahlung EV-Charger [€/Monat]"
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+  whg02_kaution_eur:
+    name: "WHG02 – Kaution [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+input_datetime:
+  whg02_einzug:
+    name: "WHG02 – Mietbeginn"
+    has_date: true
+    has_time: false
+  whg02_auszug:
+    name: "WHG02 – Mietende"
+    has_date: true
+    has_time: false
+
+input_boolean:
+  whg02_notify_verbrauch_monatlich:
+    name: "WHG02 – Monatsbenachrichtigung Verbrauch"
+  whg02_notify_enabled:
+    name: "WHG02 – Monatsbenachrichtigung Verbrauch"
+    icon: mdi:message-processing
+

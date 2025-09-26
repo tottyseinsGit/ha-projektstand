@@ -1,0 +1,304 @@
+# /config/packages/heizkosten_quellen.yaml
+# Aggregation der Wärmebereitstellung für den Speicher (monatlich):
+# 1) Wärmepumpe (el. -> th via COP oder direkt WMZ)
+# 2) Solarthermie (WMZ th)
+# 3) PV-Überschuss / Ohmpilot (el. -> th mit COP=1)
+# Ergebnis: ein einheitlicher Preis €/kWh_th pro Monat + Kostenaufschlüsselung.
+
+############################
+# 0) HELFER – Mapping & Preise
+############################
+
+# --- Entity-ID Mapping (monatl. Zählerstände!) ---
+# Trage hier im UI die Entity-IDs deiner *monatlichen* Zähler (Utility Meter) ein.
+# Bleiben Felder leer oder Entity unbekannt → fällt auf 0 zurück.
+
+input_text:
+  # Wärmepumpe
+  heat_hp_el_kwh_month_entity:
+    name: "Heizpool – WP: EL kWh (Monat) – Entity-ID"
+    max: 80
+  heat_hp_th_kwh_month_entity:
+    name: "Heizpool – WP: TH kWh (Monat, WMZ) – Entity-ID (optional)"
+    max: 80
+  heat_hp_cop_month_entity:
+    name: "Heizpool – WP: COP (Monatsmittel) – Entity-ID (optional)"
+    max: 80
+  heat_hp_el_grid_kwh_month_entity:
+    name: "Heizpool – WP: EL kWh aus Netz (Monat) – Entity-ID (optional)"
+    max: 80
+
+  # Solarthermie (thermisch direkt)
+  heat_solar_th_kwh_month_entity:
+    name: "Heizpool – Solar: TH kWh (Monat, WMZ) – Entity-ID"
+    max: 80
+  heat_solar_pump_el_kwh_month_entity:
+    name: "Heizpool – Solar: Pumpenstrom kWh (Monat) – Entity-ID (optional)"
+    max: 80
+
+  # Ohmpilot (el. -> th 1:1)
+  heat_ohm_el_kwh_month_entity:
+    name: "Heizpool – Ohmpilot: EL kWh (Monat) – Entity-ID"
+    max: 80
+  heat_ohm_el_grid_kwh_month_entity:
+    name: "Heizpool – Ohmpilot: EL kWh aus Netz (Monat) – Entity-ID (optional)"
+    max: 80
+
+# --- Preise / Pauschalen (im UI pflegen) ---
+input_number:
+  heat_price_grid_eur_kwh:
+    name: "Heizpool – Strompreis Netz [€/kWh]"
+    min: 0
+    max: 1
+    step: 0.0001
+  heat_price_pv_eur_kwh:
+    name: "Heizpool – Ansatz PV-Strom [€/kWh] (optional)"
+    min: 0
+    max: 1
+    step: 0.0001
+  heat_solar_maintenance_eur_month:
+    name: "Heizpool – Solar: Wartung/sonst. Kosten [€/Monat]"
+    min: 0
+    max: 1000
+    step: 0.01
+  heat_hp_cop_default:
+    name: "Heizpool – WP: COP Default (falls kein Sensor)"
+    min: 1
+    max: 8
+    step: 0.01
+
+############################
+# 1) TEMPLATE – Werte aus Entities ziehen (robust)
+############################
+template:
+  - trigger: []   # rein statisch berechnet
+    sensor:
+      # --- HELFER: generisches Safe-Getter ---
+      - name: "heizpool_hp_el_kwh_month_raw"
+        unique_id: heizpool_hp_el_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_hp_el_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+      - name: "heizpool_hp_el_grid_kwh_month_raw"
+        unique_id: heizpool_hp_el_grid_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_hp_el_grid_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+      - name: "heizpool_hp_th_kwh_month_raw"
+        unique_id: heizpool_hp_th_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_hp_th_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+      - name: "heizpool_hp_cop_month_raw"
+        unique_id: heizpool_hp_cop_month_raw
+        unit_of_measurement: ""
+        state: >-
+          {% set e = states('input_text.heat_hp_cop_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}{{ states('input_number.heat_hp_cop_default') | float(3) }}{% endif %}
+
+      - name: "heizpool_solar_th_kwh_month_raw"
+        unique_id: heizpool_solar_th_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_solar_th_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+      - name: "heizpool_solar_pump_el_kwh_month_raw"
+        unique_id: heizpool_solar_pump_el_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_solar_pump_el_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+
+      - name: "heizpool_ohm_el_kwh_month_raw"
+        unique_id: heizpool_ohm_el_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_ohm_el_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+      - name: "heizpool_ohm_el_grid_kwh_month_raw"
+        unique_id: heizpool_ohm_el_grid_kwh_month_raw
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set e = states('input_text.heat_ohm_el_grid_kwh_month_entity') | trim %}
+          {% if e and states(e) not in ['unknown','unavailable'] %}{{ states(e) | float(0) }}{% else %}0{% endif %}
+
+############################
+# 2) BERECHNUNG – Energiemengen (thermisch) & Aufteilung EL Netz/PV
+############################
+  - trigger: []
+    sensor:
+      # EL-Anteile / PV-Abzug
+      - name: "heizpool_hp_el_grid_kwh_month"
+        unique_id: heizpool_hp_el_grid_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set el = states('sensor.heizpool_hp_el_kwh_month_raw') | float(0) %}
+          {% set grid = states('sensor.heizpool_hp_el_grid_kwh_month_raw') | float(0) %}
+          {{ (grid if grid>0 else el) | float(0) }}
+      - name: "heizpool_hp_el_pv_kwh_month"
+        unique_id: heizpool_hp_el_pv_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set el = states('sensor.heizpool_hp_el_kwh_month_raw') | float(0) %}
+          {% set grid = states('sensor.heizpool_hp_el_grid_kwh_month_raw') | float(0) %}
+          {% set pv = el - (grid if grid>0 else el) %}
+          {{ (pv if pv>0 else 0) }}
+      - name: "heizpool_ohm_el_grid_kwh_month"
+        unique_id: heizpool_ohm_el_grid_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set el = states('sensor.heizpool_ohm_el_kwh_month_raw') | float(0) %}
+          {% set grid = states('sensor.heizpool_ohm_el_grid_kwh_month_raw') | float(0) %}
+          {{ (grid if grid>0 else el) }}
+      - name: "heizpool_ohm_el_pv_kwh_month"
+        unique_id: heizpool_ohm_el_pv_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set el = states('sensor.heizpool_ohm_el_kwh_month_raw') | float(0) %}
+          {% set grid = states('sensor.heizpool_ohm_el_grid_kwh_month_raw') | float(0) %}
+          {% set pv = el - (grid if grid>0 else el) %}
+          {{ (pv if pv>0 else 0) }}
+
+      # Thermische Energiemengen (kWh_th)
+      - name: "heizpool_hp_th_kwh_month"
+        unique_id: heizpool_hp_th_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {% set th = states('sensor.heizpool_hp_th_kwh_month_raw') | float(0) %}
+          {% if th>0 %}
+            {{ th }}
+          {% else %}
+            {% set el = states('sensor.heizpool_hp_el_kwh_month_raw') | float(0) %}
+            {% set cop = states('sensor.heizpool_hp_cop_month_raw') | float(3) %}
+            {{ (el * cop) | float(0) }}
+          {% endif %}
+      - name: "heizpool_solar_th_kwh_month"
+        unique_id: heizpool_solar_th_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: "{{ states('sensor.heizpool_solar_th_kwh_month_raw') | float(0) }}"
+      - name: "heizpool_ohm_th_kwh_month"
+        unique_id: heizpool_ohm_th_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: "{{ states('sensor.heizpool_ohm_el_kwh_month_raw') | float(0) }}"
+
+      - name: "heizpool_th_sum_kwh_month"
+        unique_id: heizpool_th_sum_kwh_month
+        unit_of_measurement: "kWh"
+        state_class: total
+        device_class: energy
+        state: >-
+          {{
+            (states('sensor.heizpool_hp_th_kwh_month')|float(0) +
+             states('sensor.heizpool_solar_th_kwh_month')|float(0) +
+             states('sensor.heizpool_ohm_th_kwh_month')|float(0))
+          }}
+
+############################
+# 3) KOSTEN – EURO/Monat & €/kWh_th
+############################
+  - trigger: []
+    sensor:
+      - name: "heizpool_cost_hp_eur_month"
+        unique_id: heizpool_cost_hp_eur_month
+        unit_of_measurement: "€"
+        state_class: total
+        state: >-
+          {% set grid = states('sensor.heizpool_hp_el_grid_kwh_month') | float(0) %}
+          {% set p_grid = states('input_number.heat_price_grid_eur_kwh') | float(0) %}
+          {{ (grid * p_grid) | round(2) }}
+      - name: "heizpool_cost_ohm_eur_month"
+        unique_id: heizpool_cost_ohm_eur_month
+        unit_of_measurement: "€"
+        state_class: total
+        state: >-
+          {% set g = states('sensor.heizpool_ohm_el_grid_kwh_month') | float(0) %}
+          {% set pv = states('sensor.heizpool_ohm_el_pv_kwh_month') | float(0) %}
+          {% set p_grid = states('input_number.heat_price_grid_eur_kwh') | float(0) %}
+          {% set p_pv = states('input_number.heat_price_pv_eur_kwh') | float(0) %}
+          {{ (g*p_grid + pv*p_pv) | round(2) }}
+      - name: "heizpool_cost_solar_eur_month"
+        unique_id: heizpool_cost_solar_eur_month
+        unit_of_measurement: "€"
+        state_class: total
+        state: >-
+          {% set pump = states('sensor.heizpool_solar_pump_el_kwh_month_raw') | float(0) %}
+          {% set p_grid = states('input_number.heat_price_grid_eur_kwh') | float(0) %}
+          {% set maint = states('input_number.heat_solar_maintenance_eur_month') | float(0) %}
+          {{ (pump*p_grid + maint) | round(2) }}
+      - name: "heizpool_cost_total_eur_month"
+        unique_id: heizpool_cost_total_eur_month
+        unit_of_measurement: "€"
+        state_class: total
+        state: >-
+          {{
+            (states('sensor.heizpool_cost_hp_eur_month')|float(0) +
+             states('sensor.heizpool_cost_ohm_eur_month')|float(0) +
+             states('sensor.heizpool_cost_solar_eur_month')|float(0)) | round(2)
+          }}
+      - name: "heizpool_price_eur_per_kwh_th_month"
+        unique_id: heizpool_price_eur_per_kwh_th_month
+        unit_of_measurement: "€/kWh"
+        state: >-
+          {% set q = states('sensor.heizpool_th_sum_kwh_month') | float(0) %}
+          {% set c = states('sensor.heizpool_cost_total_eur_month') | float(0) %}
+          {% if q > 0 %}{{ (c / q) | round(5) }}{% else %}0{% endif %}
+
+############################
+# 4) (Optional) Debug/Transparenz-Gruppen
+############################
+group:
+  heizpool_monat_energie:
+    name: "Heizpool – Monatliche Energiemengen (th/el)"
+    entities:
+      - sensor.heizpool_hp_el_kwh_month_raw
+      - sensor.heizpool_hp_el_grid_kwh_month
+      - sensor.heizpool_hp_el_pv_kwh_month
+      - sensor.heizpool_hp_th_kwh_month
+      - sensor.heizpool_solar_th_kwh_month
+      - sensor.heizpool_ohm_el_kwh_month_raw
+      - sensor.heizpool_ohm_el_grid_kwh_month
+      - sensor.heizpool_ohm_el_pv_kwh_month
+      - sensor.heizpool_ohm_th_kwh_month
+      - sensor.heizpool_th_sum_kwh_month
+  heizpool_monat_kosten:
+    name: "Heizpool – Monatliche Kosten"
+    entities:
+      - input_number.heat_price_grid_eur_kwh
+      - input_number.heat_price_pv_eur_kwh
+      - input_number.heat_solar_maintenance_eur_month
+      - sensor.heizpool_cost_hp_eur_month
+      - sensor.heizpool_cost_ohm_eur_month
+      - sensor.heizpool_cost_solar_eur_month
+      - sensor.heizpool_cost_total_eur_month
+      - sensor.heizpool_price_eur_per_kwh_th_month

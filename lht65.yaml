@@ -1,0 +1,120 @@
+# Paket: Dragino LHT65 – Mapping vorhandener HA-Entitäten auf Standard-IDs
+# Regeln: Packages-only, ASCII unique_id, korrekte device_class/state_class/Einheiten.
+# Quelle-Entities (vorhanden laut dir):
+#   sensor.eui_a84041ae4186f82b_tempc_sht
+#   sensor.eui_a84041ae4186f82b_tempc_tmp117
+#   sensor.eui_a84041ae4186f82b_hum_sht
+#   sensor.eui_a84041ae4186f82b_batv
+#   sensor.eui_a84041ae4186f82b_bat_status
+
+template:
+  - sensor:
+      # --- Temperaturen ---
+      - name: "lht65_temperatur_sht"
+        unique_id: lht65_A84041AE4186F82B_temp_sht_c
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        availability: >
+          {{ states('sensor.eui_a84041ae4186f82b_tempc_sht') not in ['unknown','unavailable',''] }}
+        state: >
+          {{ states('sensor.eui_a84041ae4186f82b_tempc_sht') | replace(',', '.') | float(0) | round(2) }}
+
+      - name: "lht65_temperatur_extern"
+        unique_id: lht65_A84041AE4186F82B_temp_tmp117_c
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        availability: >
+          {{ states('sensor.eui_a84041ae4186f82b_tempc_tmp117') not in ['unknown','unavailable',''] }}
+        state: >
+          {{ states('sensor.eui_a84041ae4186f82b_tempc_tmp117') | replace(',', '.') | float(0) | round(2) }}
+
+      # --- Luftfeuchte ---
+      - name: "lht65_luftfeuchte"
+        unique_id: lht65_A84041AE4186F82B_hum_sht_pct
+        device_class: humidity
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >
+          {{ states('sensor.eui_a84041ae4186f82b_hum_sht') not in ['unknown','unavailable',''] }}
+        state: >
+          {% set v = states('sensor.eui_a84041ae4186f82b_hum_sht') | replace(',', '.') | float(0) %}
+          {{ (0 if v < 0 else (100 if v > 100 else v)) | round(1) }}
+
+      # --- Batterie: Spannung ---
+      - name: "lht65_batteriespannung"
+        unique_id: lht65_A84041AE4186F82B_bat_v
+        device_class: voltage
+        unit_of_measurement: "V"
+        state_class: measurement
+        availability: >
+          {{ states('sensor.eui_a84041ae4186f82b_batv') not in ['unknown','unavailable',''] }}
+        state: >
+          {{ states('sensor.eui_a84041ae4186f82b_batv') | replace(',', '.') | float(0) | round(3) }}
+
+      # --- Batterie: Prozent (für Karten, device_class=battery) ---
+      - name: "lht65_batterie_prozent"
+        unique_id: lht65_A84041AE4186F82B_battery_pct
+        device_class: battery
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >
+          {{ states('sensor.eui_a84041ae4186f82b_batv') not in ['unknown','unavailable',''] }}
+        state: >
+          {% set v = states('sensor.eui_a84041ae4186f82b_batv') | replace(',', '.') | float(0) %}
+          {% if v <= 0 %}
+            0
+          {% else %}
+            {# Li-SOCl2 grob 2.6 V (leer) .. 3.6 V (voll) #}
+            {% set vmin, vmax = 2.6, 3.15 %}
+            {% set pct = ((v - vmin) / (vmax - vmin) * 100) %}
+            {{ (0 if pct < 0 else (100 if pct > 100 else pct)) | round(0) }}
+          {% endif %}
+        icon: >-
+          {% set p = states('sensor.lht65_batterie_prozent') | int(-1) %}
+          {% if p < 0 %}mdi:battery-unknown
+          {% elif p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% else %}mdi:battery-alert
+          {% endif %}
+
+      # --- Batterie: Status (enum) für Auto-Entities/Badges ---
+      - name: "lht65_batterie_status"
+        unique_id: lht65_A84041AE4186F82B_battery_state
+        state: >-
+          {% set p = states('sensor.lht65_batterie_prozent') | int(-1) %}
+          {% if p < 0 %}unbekannt
+          {% elif p >= 85 %}voll
+          {% elif p >= 60 %}ok
+          {% elif p >= 35 %}bald_tauschen
+          {% else %}kritisch
+          {% endif %}
+        icon: >-
+          {% set p = states('sensor.lht65_batterie_prozent') | int(-1) %}
+          {% if p < 0 %}mdi:battery-unknown
+          {% elif p >= 85 %}mdi:battery
+          {% elif p >= 60 %}mdi:battery-70
+          {% elif p >= 35 %}mdi:battery-40
+          {% else %}mdi:battery-alert
+          {% endif %}
+        attributes:
+          bat_status_raw: "{{ states('sensor.eui_a84041ae4186f82b_bat_status') }}"
+
+  - binary_sensor:
+      # --- Batterie: Warnung (true bei bald_tauschen/ kritisch) ---
+      - name: "lht65_batterie_warnung"
+        unique_id: lht65_A84041AE4186F82B_battery_warning
+        device_class: problem
+        availability: >
+          {{ states('sensor.lht65_batterie_prozent') not in ['unknown','unavailable',''] }}
+        state: >-
+          {% set st = states('sensor.lht65_batterie_status') %}
+          {{ 'on' if st in ['bald_tauschen','kritisch'] else 'off' }}
+        icon: >-
+          {% if is_state('binary_sensor.lht65_batterie_warnung','on') %}
+            mdi:alert
+          {% else %}
+            mdi:check-circle
+          {% endif %}

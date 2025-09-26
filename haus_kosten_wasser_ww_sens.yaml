@@ -1,0 +1,67 @@
+# /config/packages/haus_kosten_wasser_ww_sens.yaml
+#
+# Minimal: genau 5 Sensoren (keine neuen input_number/input_select-Definitionen).
+# Erwartete Eingänge (müssen bereits existieren):
+# - input_number.haus_kaltwasser_zaehlerstand_m3_2025_aktuell
+# - input_number.haus_kaltwasser_zaehlerstand_m3_2025_jahresanfang
+# - input_number.haus_warmwasser_zaehlerstand_m3_2025_aktuell
+# - input_number.haus_warmwasser_zaehlerstand_m3_2025_jahresanfang
+# - input_number.haus_kosten_wasser_arbeitspreis_eur_m3
+# - input_number.haus_kosten_abwasser_arbeitspreis_eur_m3
+# - input_number.haus_betriebskosten_abwasser_grundpreis_eur
+# - input_number.haus_betriebskosten_wasser_grundpreis_eur   # optional (s. Select)
+# - input_select.umlegung_grundpreis_wasser                   # Option "hauskosten" = einrechnen
+
+template:
+  - sensor:
+      # 1) Kaltwasser-Verbrauch 2025 (m³)
+      - name: "Haus – Kaltwasser Verbrauch 2025 [m³]"
+        unique_id: haus_kaltwasser_verbrauch_m3_2025
+        unit_of_measurement: "m³"
+        state: >
+          {% set cur = states('input_number.haus_kaltwasser_zaehlerstand_m3_2025_aktuell')|float(0) %}
+          {% set start = states('input_number.haus_kaltwasser_zaehlerstand_m3_2025_jahresanfang')|float(0) %}
+          {{ (cur - start) if cur >= start else 0 }}
+
+      # 2) Warmwasser-Verbrauch 2025 (m³)
+      - name: "Haus – Warmwasser Verbrauch 2025 [m³]"
+        unique_id: haus_warmwasser_verbrauch_m3_2025
+        unit_of_measurement: "m³"
+        state: >
+          {% set cur = states('input_number.haus_warmwasser_zaehlerstand_m3_2025_aktuell')|float(0) %}
+          {% set start = states('input_number.haus_warmwasser_zaehlerstand_m3_2025_jahresanfang')|float(0) %}
+          {{ (cur - start) if cur >= start else 0 }}
+
+      # 3) Gesamtkosten Wasser+Abwasser (Haus, €/Jahr)
+      - name: "Haus – Kosten Wasser+Abwasser [€/Jahr]"
+        unique_id: kosten_wasser_abwasser_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set v_m3   = states('sensor.haus_kaltwasser_verbrauch_m3_2025')|float(0) %}
+          {% set ap_w   = states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')|float(0) %}
+          {% set ap_abw = states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')|float(0) %}
+          {% set gp_abw = states('input_number.haus_betriebskosten_abwasser_grundpreis_eur')|float(0) %}
+          {% set gp_w_opt = states('input_number.haus_betriebskosten_wasser_grundpreis_eur')|float(0) %}
+          {% set sel = states('input_select.umlegung_grundpreis_wasser')|lower %}
+          {% set gp_w = gp_w_opt if sel == 'hauskosten' else 0 %}
+          {{ (v_m3 * ap_w + v_m3 * ap_abw + gp_abw + gp_w) | round(2) }}
+
+      # 4) Einheitspreis Wasser+Abwasser (€/m³)
+      - name: "Haus – Preis Wasser+Abwasser [€/m³]"
+        unique_id: preis_wasser_abwasser_eur_pro_m3
+        unit_of_measurement: "€/m³"
+        state: >
+          {% set kosten = states('sensor.kosten_wasser_abwasser_eur_jahr')|float(0) %}
+          {% set v_m3   = states('sensor.haus_kaltwasser_verbrauch_m3_2025')|float(0) %}
+          {{ (kosten / v_m3) | round(4) if v_m3 > 0 else 0 }}
+
+      # 5) Warmwasser-Kosten (Haus, €/Jahr)
+      - name: "Haus – Kosten Warmwasser [€/Jahr]"
+        unique_id: kosten_warmwasser_haus_eur_jahr
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >
+          {% set ww_m3 = states('sensor.haus_warmwasser_verbrauch_m3_2025')|float(0) %}
+          {% set preis = states('sensor.preis_wasser_abwasser_eur_pro_m3')|float(0) %}
+          {{ (ww_m3 * preis) | round(2) }}

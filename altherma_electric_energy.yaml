@@ -1,0 +1,35 @@
+# /config/packages/altherma_electric_energy.yaml
+
+# Quelle: elektrischer Leistungssensor (ggf. Namen anpassen)
+# Beispiel aus deiner Liste: sensor.keller_altherma_elektrische_leistung_w
+
+sensor:
+  - platform: integration
+    name: "altherma_elektrische_energie_kwh"
+    source: sensor.keller_altherma_elektrische_leistung_w   # <--- ggf. anpassen
+    method: trapezoidal
+    unit_prefix: k
+    round: 3
+
+  - platform: statistics
+    name: "altherma_elektrische_energie_24h_kwh"
+    entity_id: sensor.altherma_elektrische_energie_kwh
+    state_characteristic: change
+    max_age:
+      hours: 24
+    sampling_size: 500
+    precision: 3
+
+utility_meter:
+  altherma_elektrisch_heute:
+    name: "Elektrische Energie heute [kWh]"
+    source: sensor.altherma_elektrische_energie_kwh
+    cycle: daily
+  altherma_elektrisch_monat:
+    name: "Elektrische Energie Monat [kWh]"
+    source: sensor.altherma_elektrische_energie_kwh
+    cycle: monthly
+  altherma_elektrisch_jahr:
+    name: "Elektrische Energie Jahr [kWh]"
+    source: sensor.altherma_elektrische_energie_kwh
+    cycle: yearly

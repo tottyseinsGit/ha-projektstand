@@ -1,0 +1,238 @@
+# /config/packages/victron_ess_modbus_readonly.yaml
+# Read-only Auslesen der wichtigsten Victron ESS/Settings-Register über Modbus TCP.
+# Keine Schreib-Entities (number/switch/select) -> kein Eingriff in den Betrieb.
+
+modbus:
+  - name: victron_cerbo
+    type: tcp
+    host: 192.168.178.26
+    port: 502
+    delay: 2
+    timeout: 5
+    retries: 3
+    retry_on_empty: true
+    message_wait_milliseconds: 50
+
+    sensors:
+      # --- ESS Setpoints / Limits (Settings, Unit-ID 100) ---
+      - name: victron_ess_ac_power_setpoint_w
+        unique_id: victron_ess_ac_power_setpoint_w
+        slave: 100
+        address: 2700
+        input_type: holding
+        data_type: int16
+        scale: 1
+        precision: 0
+        unit_of_measurement: "W"
+        scan_interval: 15
+
+      - name: victron_ess_ac_power_setpoint_w_alt
+        unique_id: victron_ess_ac_power_setpoint_w_alt
+        slave: 100
+        address: 2703
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 0
+        unit_of_measurement: "W"
+        scan_interval: 15
+
+      # Volatiler Grid-Setpoint (im Speicher) – nur lesen
+      - name: victron_ess_grid_setpoint_volatile_w
+        unique_id: victron_ess_grid_setpoint_volatile_w
+        slave: 100
+        address: 2716
+        input_type: holding
+        data_type: int32
+        count: 2
+        scale: 1
+        precision: 0
+        unit_of_measurement: "W"
+        scan_interval: 15
+
+      - name: victron_ess_max_grid_feed_in_w
+        unique_id: victron_ess_max_grid_feed_in_w
+        slave: 100
+        address: 2706
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 0
+        unit_of_measurement: "W"
+        scan_interval: 30
+
+      - name: victron_ess_max_discharge_power_w
+        unique_id: victron_ess_max_discharge_power_w
+        slave: 100
+        address: 2704
+        input_type: holding
+        data_type: int16
+        scale: 0.1
+        precision: 0
+        unit_of_measurement: "W"
+        scan_interval: 30
+
+      - name: victron_dvcc_system_max_charge_current_a
+        unique_id: victron_dvcc_system_max_charge_current_a
+        slave: 100
+        address: 2705
+        input_type: holding
+        data_type: int16
+        scale: 1
+        precision: 1
+        unit_of_measurement: "A"
+        scan_interval: 30
+
+      - name: victron_ess_max_charge_percent
+        unique_id: victron_ess_max_charge_percent
+        slave: 100
+        address: 2701
+        input_type: holding
+        data_type: uint16
+        scale: 1
+        precision: 0
+        unit_of_measurement: "%"
+        scan_interval: 30
+
+      - name: victron_ess_max_discharge_percent
+        unique_id: victron_ess_max_discharge_percent
+        slave: 100
+        address: 2702
+        input_type: holding
+        data_type: uint16
+        scale: 1
+        precision: 0
+        unit_of_measurement: "%"
+        scan_interval: 30
+
+      - name: victron_ess_overvoltage_feed_in
+        unique_id: victron_ess_overvoltage_feed_in
+        slave: 100
+        address: 2707
+        input_type: holding
+        data_type: int16
+        scan_interval: 30
+
+      - name: victron_ess_prevent_feedback
+        unique_id: victron_ess_prevent_feedback
+        slave: 100
+        address: 2708
+        input_type: holding
+        data_type: int16
+        scan_interval: 30
+
+      - name: victron_limit_managed_batt_voltage_v
+        unique_id: victron_limit_managed_batt_voltage_v
+        slave: 100
+        address: 2710
+        input_type: holding
+        data_type: uint16
+        scale: 0.1
+        precision: 1
+        unit_of_measurement: "V"
+        scan_interval: 60
+
+      # --- ESS Betriebsmodus & BatteryLife (Settings, Unit-ID 100) ---
+      - name: victron_ess_mode_raw
+        unique_id: victron_ess_mode_raw
+        slave: 100
+        address: 2902
+        input_type: holding
+        data_type: uint16
+        scan_interval: 30
+
+      - name: victron_ess_min_soc_percent
+        unique_id: victron_ess_min_soc_percent
+        slave: 100
+        address: 2901
+        input_type: holding
+        data_type: uint16
+        scale: 0.1
+        precision: 1
+        unit_of_measurement: "%"
+        scan_interval: 30
+
+      - name: victron_ess_batterylife_state_raw
+        unique_id: victron_ess_batterylife_state_raw
+        slave: 100
+        address: 2900
+        input_type: holding
+        data_type: uint16
+        scan_interval: 30
+
+      - name: victron_ess_batterylife_soc_limit_percent
+        unique_id: victron_ess_batterylife_soc_limit_percent
+        slave: 100
+        address: 2903
+        input_type: holding
+        data_type: uint16
+        scale: 0.1
+        precision: 1
+        unit_of_measurement: "%"
+        scan_interval: 30
+
+      - name: victron_grid_limiting_status
+        unique_id: victron_grid_limiting_status
+        slave: 100
+        address: 2709
+        input_type: holding
+        data_type: int16
+        scan_interval: 30
+
+      - name: victron_peakshave_export_limit_w
+        unique_id: victron_peakshave_export_limit_w
+        slave: 100
+        address: 2713
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        scan_interval: 30
+
+      - name: victron_peakshave_import_limit_w
+        unique_id: victron_peakshave_import_limit_w
+        slave: 100
+        address: 2714
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        scan_interval: 30
+
+template:
+  - sensor:
+      # Lesbare Texte aus den Rohwerten (nur Anzeige)
+      - name: victron_ess_mode
+        unique_id: victron_ess_mode_text
+        state: >
+          {% set v = states('sensor.victron_ess_mode_raw') | int(-1) %}
+          {% set map = {1:'ESS mit Phasenkorr.', 2:'ESS ohne Phasenkorr.', 3:'Disabled/External'} %}
+          {{ map.get(v, 'unbekannt (' ~ v ~ ')') }}
+
+      - name: victron_ess_batterylife_state
+        unique_id: victron_ess_batterylife_state_text
+        state: >
+          {% set v = states('sensor.victron_ess_batterylife_state_raw') | int(-1) %}
+          {% set map = {
+            0:'Unused/Disabled', 1:'Restarting', 2:'Self-consumption',
+            3:'Self-consumption (SoC low)', 4:'Discharge disabled',
+            5:'Slow charge', 6:'Sustain', 7:'Recharge',
+            8:'Keep batteries charged', 9:'BL Disabled (SoC low)',
+            10:'BL Disabled (SoC correction)', 11:'BL Disabled (Low SoC)',
+            12:'BL Disabled (Low SoC recharge)'
+          } %}
+          {{ map.get(v, 'unbekannt (' ~ v ~ ')') }}
+
+  - binary_sensor:
+      - name: victron_ess_overvoltage_feed_in_enabled
+        unique_id: victron_ess_overvoltage_feed_in_enabled
+        state: >
+          {{ (states('sensor.victron_ess_overvoltage_feed_in')|int(0)) == 1 }}
+
+      - name: victron_ess_prevent_feedback_enabled
+        unique_id: victron_ess_prevent_feedback_enabled
+        state: >
+          {{ (states('sensor.victron_ess_prevent_feedback')|int(0)) == 1 }}
+
+      - name: victron_grid_limiting_active
+        unique_id: victron_grid_limiting_active
+        state: >
+          {{ (states('sensor.victron_grid_limiting_status')|int(0)) == 1 }}

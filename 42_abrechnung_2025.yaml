@@ -1,0 +1,90 @@
+# /config/packages/42_abrechnung_2025.yaml
+# Endabrechnung 2025 – Haus gesamt + Wohnungssummen
+
+template:
+  - sensor:
+      # Hauskosten gesamt 2025
+      - name: haus_betriebskosten_gesamt_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set s = [
+            states('sensor.haus_allgemeinstrom_gesamt_eur_2025'),
+            states('sensor.haus_wasser_kosten_eur_2025'),
+            states('sensor.haus_abwasser_kosten_eur_2025'),
+            states('input_number.grundsteuer_eur_jahr_2025'),
+            states('input_number.versicherung_eur_jahr_2025'),
+            states('input_number.muell_eur_jahr_2025'),
+            states('input_number.niederschlagswasser_eur_jahr_2025'),
+            states('input_number.haus_betriebskosten_wartung_heizung_eur'),
+            states('input_number.haus_betriebskosten_abrechnungsservice_eur')
+          ] | map('float', 0) | list %}
+          {{ (s | sum) | round(2) }}
+
+      # Wohnungssummen – WHG01..WHG04
+      - name: whg01_betriebskosten_summe_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set s = [
+            states('sensor.whg01_strom_variabel_anteil_eur_2025'),
+            states('sensor.whg01_strom_grundpreis_anteil_eur_2025'),
+            states('sensor.whg01_wasser_anteil_eur_2025'),
+            states('sensor.whg01_abwasser_anteil_eur_2025'),
+            states('sensor.whg01_grundsteuer_anteil_eur_2025'),
+            states('sensor.whg01_versicherung_anteil_eur_2025'),
+            states('sensor.whg01_muell_anteil_eur_2025'),
+            states('sensor.whg01_niederschlagswasser_anteil_eur_2025'),
+            states('sensor.whg01_wartung_heizung_anteil_eur_2025'),
+            states('sensor.whg01_abrechnungsservice_anteil_eur_2025')
+          ] | map('float', 0) | list %}
+          {{ (s | sum) | round(2) }}
+
+      - name: whg02_betriebskosten_summe_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set s = [
+            states('sensor.whg02_strom_variabel_anteil_eur_2025'),
+            states('sensor.whg02_strom_grundpreis_anteil_eur_2025'),
+            states('sensor.whg02_wasser_anteil_eur_2025'),
+            states('sensor.whg02_abwasser_anteil_eur_2025'),
+            states('sensor.whg02_grundsteuer_anteil_eur_2025'),
+            states('sensor.whg02_versicherung_anteil_eur_2025'),
+            states('sensor.whg02_muell_anteil_eur_2025'),
+            states('sensor.whg02_niederschlagswasser_anteil_eur_2025'),
+            states('sensor.whg02_wartung_heizung_anteil_eur_2025'),
+            states('sensor.whg02_abrechnungsservice_anteil_eur_2025')
+          ] | map('float', 0) | list %}
+          {{ (s | sum) | round(2) }}
+
+      - name: whg03_betriebskosten_summe_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set s = [
+            states('sensor.whg03_strom_variabel_anteil_eur_2025'),
+            states('sensor.whg03_strom_grundpreis_anteil_eur_2025'),
+            states('sensor.whg03_wasser_anteil_eur_2025'),
+            states('sensor.whg03_abwasser_anteil_eur_2025'),
+            states('sensor.whg03_grundsteuer_anteil_eur_2025'),
+            states('sensor.whg03_versicherung_anteil_eur_2025'),
+            states('sensor.whg03_muell_anteil_eur_2025'),
+            states('sensor.whg03_niederschlagswasser_anteil_eur_2025'),
+            states('sensor.whg03_wartung_heizung_anteil_eur_2025'),
+            states('sensor.whg03_abrechnungsservice_anteil_eur_2025')
+          ] | map('float', 0) | list %}
+          {{ (s | sum) | round(2) }}
+
+      - name: whg04_betriebskosten_summe_eur_2025
+        unit_of_measurement: "€"
+        state: >-
+          {% set s = [
+            states('sensor.whg04_strom_variabel_anteil_eur_2025'),
+            states('sensor.whg04_strom_grundpreis_anteil_eur_2025'),
+            states('sensor.whg04_wasser_anteil_eur_2025'),
+            states('sensor.whg04_abwasser_anteil_eur_2025'),
+            states('sensor.whg04_grundsteuer_anteil_eur_2025'),
+            states('sensor.whg04_versicherung_anteil_eur_2025'),
+            states('sensor.whg04_muell_anteil_eur_2025'),
+            states('sensor.whg04_niederschlagswasser_anteil_eur_2025'),
+            states('sensor.whg04_wartung_heizung_anteil_eur_2025'),
+            states('sensor.whg04_abrechnungsservice_anteil_eur_2025')
+          ] | map('float', 0) | list %}
+          {{ (s | sum) | round(2) }}

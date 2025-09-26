@@ -1,0 +1,14 @@
+# /config/packages/telegram_script.yaml
+# Script zum manuellen Senden einer Telegram-Nachricht
+
+script:
+  telegram_send_test:
+    alias: "Telegram – Testnachricht senden"
+    mode: single
+    sequence:
+      - service: telegram_bot.send_message
+        data:
+          target: [8485266911]   # deine Chat-ID
+          message: >
+            ✅ <b>HA Test</b> – gesendet um {{ now().strftime("%d.%m.%Y %H:%M") }}
+          parse_mode: html

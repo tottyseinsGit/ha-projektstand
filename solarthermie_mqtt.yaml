@@ -1,0 +1,51 @@
+# /config/packages/solarthermie_mqtt.yaml
+mqtt:
+  sensor:
+    - name: wmz_total_kwh
+      unique_id: wmz_94857143_total_kwh_yaml_v1
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.total_kwh | float(0) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      qos: 1
+
+    - name: wmz_total_water_m3
+      unique_id: wmz_94857143_total_water_m3_yaml_v1
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.total_water_m3 | float(0) }}"
+      unit_of_measurement: "m³"
+      device_class: volume
+      state_class: total_increasing
+      qos: 1
+
+    - name: wmz_target_kwh
+      unique_id: wmz_94857143_target_kwh_yaml_v1
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.target_kwh | float(0) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      qos: 1
+
+    - name: wmz_status
+      unique_id: wmz_94857143_status_yaml_v1
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.status | default('', true) }}"
+      qos: 1
+
+    - name: wmz_rssi_dbm
+      unique_id: wmz_94857143_rssi_yaml_v1
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.rssi_dbm | float(0) }}"
+      unit_of_measurement: "dBm"
+      device_class: signal_strength
+      state_class: measurement
+      qos: 1
+
+    - name: wmz_meter_timestamp
+      unique_id: wmz_94857143_timestamp_yaml_v1
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.timestamp }}"
+      device_class: timestamp
+      qos: 1
