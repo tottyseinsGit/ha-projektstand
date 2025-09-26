@@ -82,7 +82,7 @@ template:
           {% set rg = states('sensor.epex_spot_data_price') %}
           {% set chosen = rn if rn not in ['unknown','unavailable','none','None',''] else rg %}
           {% if chosen in ['unknown','unavailable','none','None',''] %}
-            {% set chosen = states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') %}
+            {% set chosen = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') %}
           {% endif %}
           {{ (kwh * (chosen | float(0))) | round(4) }}
         attributes:
@@ -125,12 +125,12 @@ template:
         state_class: measurement
         state: >-
           {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive') | float(0) %}
-          {% set p   = states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') | float(0) %}
+          {% set p   = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
           {{ (kwh * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag 1.1.–Go-Live [€]"
           nachtrag_kwh: "{{ states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive') | float(0) }}"
-          preis_eur_kwh: "{{ states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') | float(0) }}"
+          preis_eur_kwh: "{{ states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) }}"
 
       # (Bestehender Startwert-Nachtrag bleibt erhalten – optional nutzbar)
       - name: haus_allgemeinstrom_var_nachtrag_kwh_2025
@@ -150,7 +150,7 @@ template:
         state_class: measurement
         state: >-
           {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025') | float(0) %}
-          {% set p   = states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') | float(0) %}
+          {% set p   = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
           {{ (kwh * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag (Startwert-Methode) [€]"
