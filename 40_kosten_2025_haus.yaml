@@ -140,7 +140,6 @@ input_number:
     mode: box
 
   # --- STROM ALLGEMEIN (für Nebenkosten) ---
-  # Jahres-GRUNDGEBÜHR Strom (Tibber + Messstellengebühr + Netzgrundentgelt)
   haus_betriebskosten_strom_grundgebuehr_2025:
     name: "Haus – Betriebskosten: Strom Grundgebühr 2025 [€/Jahr]"
     min: 0
@@ -149,7 +148,6 @@ input_number:
     mode: box
     unit_of_measurement: "€"
 
-  # Jährlicher Hausstrom-Verbrauch (wird automatisch aus Sensor/Utility-Meter gelesen, Fallback siehe unten)
   haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025:
     name: "Haus – Betriebskosten: Hausstrom Zählerstand 2025 [kWh]"
     min: 0
@@ -158,7 +156,6 @@ input_number:
     mode: box
     unit_of_measurement: "kWh"
 
-  # Durchschnittspreis Tibber 2025 (€/kWh) – höhere Auflösung sinnvoll
   haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025:
     name: "Haus – Betriebskosten: Hausstrom Durchschnittspreis Tibber 2025 [€/kWh]"
     min: 0
@@ -171,22 +168,22 @@ template:
   - sensor:
       # Variable Stromkosten (€/Jahr) = Verbrauch [kWh] × Durchschnittspreis [€/kWh]
       # Verbrauch primär aus sensor.hausstrom_kwh_2025 (siehe 30_zaehler_haus.yaml),
-      # Fallback auf input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025, wenn Sensor unknown/unavailable/none ist.
+      # Fallback: input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025
       - name: haus_allgemeinstrom_kosten_eur_2025
         unit_of_measurement: "€"
         state: >-
-          {% set raw_sensor = states('sensor.hausstrom_kwh_2025') %}
-          {% set v = (raw_sensor if raw_sensor not in ['unknown','unavailable','none',''] else states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025')) | float(0) %}
-          {% set p = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
-          {{ (v * p) | round(2) if v > 0 and p > 0 else none }}
+          {% set raw = states('sensor.hausstrom_kwh_2025') %}
+          {% set verbrauch = (raw if raw not in ['unknown','unavailable','none',''] else states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025')) | float(0) %}
+          {% set preis = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
+          {{ (verbrauch * preis) | round(2) if verbrauch > 0 and preis > 0 else none }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Kosten 2025 [€/Jahr]"
           quelle_verbrauch: >-
-            {% set raw_sensor = states('sensor.hausstrom_kwh_2025') %}
-            {{ 'sensor.hausstrom_kwh_2025' if raw_sensor not in ['unknown','unavailable','none',''] else 'input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025' }}
+            {% set raw = states('sensor.hausstrom_kwh_2025') %}
+            {{ 'sensor.hausstrom_kwh_2025' if raw not in ['unknown','unavailable','none',''] else 'input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025' }}
           verbrauch_kwh: >-
-            {% set raw_sensor = states('sensor.hausstrom_kwh_2025') %}
-            {{ (raw_sensor if raw_sensor not in ['unknown','unavailable','none',''] else states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025')) | float(0) }}
+            {% set raw = states('sensor.hausstrom_kwh_2025') %}
+            {{ (raw if raw not in ['unknown','unavailable','none',''] else states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025')) | float(0) }}
           preis_eur_kwh: "{{ states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) }}"
 
       # Gesamte Haus-Stromkosten = variable Kosten + Grundgebühr
