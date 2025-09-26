@@ -177,11 +177,7 @@ template:
           {% set raw = states('sensor.hausstrom_kwh_2025') %}
           {% set v = (raw if raw not in ['unknown','unavailable','none',''] else states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025')) | float(0) %}
           {% set p = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
-          {% if v > 0 and p > 0 %}
-            {{ (v * p) | round(2) }}
-          {% else %}
-            {{ none }}
-          {% endif %}
+          {{ (v * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Kosten 2025 [€/Jahr]"
           quelle_verbrauch: >-
