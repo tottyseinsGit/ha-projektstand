@@ -1,4 +1,4 @@
-# # /config/packages/40_kosten_2025_haus.yaml
+# /config/packages/40_kosten_2025_haus.yaml
 # Betriebskosten 2025 – Eingaben (nur 2025) + HAUS-Stromkostenberechnung
 # - Alle input_number als Box (keine Slider)
 # - Geld: step 0.01 | Mengen (kWh/m³): step 0.01 | Preise (€/kWh, €/m³): feiner, falls nötig
@@ -149,7 +149,7 @@ input_number:
     mode: box
     unit_of_measurement: "€"
 
-  # Jährlicher Hausstrom-Verbrauch (Fallback: Sensor -> sonst manuell)
+  # Jährlicher Hausstrom-Verbrauch (wird automatisch aus Sensor/Utility-Meter gelesen, Fallback siehe unten)
   haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025:
     name: "Haus – Betriebskosten: Hausstrom Zählerstand 2025 [kWh]"
     min: 0
@@ -158,7 +158,7 @@ input_number:
     mode: box
     unit_of_measurement: "kWh"
 
-  # Durchschnittspreis Tibber 2025 (€/kWh)
+  # Durchschnittspreis Tibber 2025 (€/kWh) – höhere Auflösung sinnvoll
   haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025:
     name: "Haus – Betriebskosten: Hausstrom Durchschnittspreis Tibber 2025 [€/kWh]"
     min: 0
@@ -170,12 +170,12 @@ input_number:
 template:
   - sensor:
       # Variable Stromkosten (€/Jahr) = Verbrauch [kWh] × Durchschnittspreis [€/kWh]
-      # Verbrauch aus sensor.hausstrom_kwh_2025 (30_zaehler_haus.yaml), Fallback: input_number
+      # Verbrauch primär aus sensor.hausstrom_kwh_2025 (siehe 30_zaehler_haus.yaml),
+      # Fallback auf input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025, wenn Sensor unknown/unavailable/none ist.
       - name: haus_allgemeinstrom_kosten_eur_2025
         unit_of_measurement: "€"
         state: >-
           {% set raw_sensor = states('sensor.hausstrom_kwh_2025') %}
-          {% set used = 'sensor.hausstrom_kwh_2025' if raw_sensor not in ['unknown','unavailable','none',''] else 'input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025' %}
           {% set v = (raw_sensor if raw_sensor not in ['unknown','unavailable','none',''] else states('input_number.haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025')) | float(0) %}
           {% set p = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
           {{ (v * p) | round(2) if v > 0 and p > 0 else none }}
@@ -198,4 +198,3 @@ template:
           {{ (var + fix) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom gesamt 2025 [€]"
-
