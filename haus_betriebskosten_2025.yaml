@@ -60,8 +60,16 @@ input_number:
     mode: box
     unit_of_measurement: "€"
 
-  haus_betriebskosten_wasser_frisch_m3:
-    name: "Haus – Betriebskosten: Frischwasser [m³]"
+  haus_betriebskosten_wasser_frisch_m3_ende:
+    name: "Haus – Betriebskosten: Frischwasser Ablesunng Ende [m³]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "m³"
+  
+  haus_betriebskosten_wasser_frisch_m3_anfang:
+    name: "Haus – Betriebskosten: Frischwasser Ablesung Anfang [m³]"
     min: 0
     max: 100000
     step: 0.01
