@@ -1,0 +1,64 @@
+# /config/packages/42_abrechnung_2025_whg01_wasser.yaml
+# WHG01 Wasser: MQTT-Total → Verbräuche (Tag/Monat/Jahr) → Jahres-€ ; Fallback auf manuelle Eingaben
+
+mqtt:
+  sensor:
+    - name: "whg01_wasser_total_m3"
+      unique_id: whg01_wasser_total_m3
+      state_topic: "wmbusmeters/Wasserzaehler_Whg01"
+      value_template: "{{ value_json.total_m3 | float(0) }}"
+      unit_of_measurement: "m³"
+      device_class: water
+      state_class: total_increasing
+      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01"
+
+utility_meter:
+  whg01_wasser_m3_year_2025:
+    name: "WHG01 Wasser Jahr 2025"
+    source: sensor.whg01_wasser_total_m3
+    cycle: yearly
+
+# Manuelle Fallback-Felder (nur benutzen, wenn Utility-Meter ausfällt)
+input_number:
+  whg01_wasser_start_2025_m3:
+    name: "WHG01 Wasser Start 2025 [m³]"
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+  whg01_wasser_end_2025_m3:
+    name: "WHG01 Wasser Ende 2025 [m³]"
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+
+template:
+  - sensor:
+      # Jahresverbrauch m³: bevorzugt Utility-Meter, sonst end-start
+      - name: "whg01_wasser_verbrauch_2025_m3"
+        unique_id: whg01_wasser_verbrauch_2025_m3
+        unit_of_measurement: "m³"
+        state: >
+          {% set um = states('sensor.whg01_wasser_m3_year_2025') %}
+          {% if um not in ['unknown','unavailable',''] %}
+            {{ um | float(0) }}
+          {% else %}
+            {{ (states('input_number.whg01_wasser_end_2025_m3')|float(0)
+               - states('input_number.whg01_wasser_start_2025_m3')|float(0)) | max(0) }}
+          {% endif %}
+
+      # Jahreskosten in € (variabel = Wasser + Abwasser)
+      - name: "whg01_wasser_kosten_2025_eur"
+        unique_id: whg01_wasser_kosten_2025_eur
+        unit_of_measurement: "€"
+        state: >
+          {% set m3 = states('sensor.whg01_wasser_verbrauch_2025_m3')|float(0) %}
+          {% set p_w = states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')|float(0) %}
+          {% set p_a = states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')|float(0) %}
+          {{ (m3 * (p_w + p_a)) | round(2) }}
+        attributes:
+          quelle_verbrauch: >
+            {% set um = states('sensor.whg01_wasser_m3_year_2025') %}
+            {{ 'utility_meter' if um not in ['unknown','unavailable',''] else 'manuell (end-start)' }}
+          mqtt_topic: "wmbusmeters/Wasserzaehler_Whg01"

@@ -1,0 +1,221 @@
+# /config/packages/42_abrechnung_2025_whg01_bridge.yaml
+# WHG01 – Bridge für Abrechnung 2025
+# - Holt Totals (MQTT/Entity) → Utility Meter (Jahr) → „Vormontage 2025“ addiert → €-Anteile
+# - IDs kompatibel zu 42_abrechnung_2025.yaml
+
+################################################################################
+# KALTWASSER (fertig – passt zu deiner bestehenden Einrichtung)
+################################################################################
+mqtt:
+  sensor:
+    - name: "whg01_wasserzaehler_total_m3_kalt"
+      unique_id: whg01_wasserzaehler_total_m3_kalt
+      state_topic: "wmbusmeters/Wasserzaehler_Whg01"
+      value_template: "{{ value_json.total_m3 | float(0) }}"
+      unit_of_measurement: "m³"
+      device_class: water
+      state_class: total_increasing
+      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01"
+
+utility_meter:
+  whg01_wasser_kalt_m3_year_2025:
+    name: "WHG01 Wasser kalt Jahr 2025"
+    source: sensor.whg01_wasserzaehler_total_m3_kalt
+    cycle: yearly
+
+input_number:
+  whg01_wasser_kalt_vormontage_2025_m3:
+    name: "WHG01 Wasser kalt – Verbrauch vor Montage 2025 [m³]"
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+    unit_of_measurement: "m³"
+
+template:
+  - sensor:
+      - name: "whg01_wasser_kalt_m3_year_2025_mit_vormontage"
+        unique_id: whg01_wasser_kalt_m3_year_2025_mit_vormontage
+        unit_of_measurement: "m³"
+        state: >
+          {% set um = states('sensor.whg01_wasser_kalt_m3_year_2025')|float(0) %}
+          {% set pre = states('input_number.whg01_wasser_kalt_vormontage_2025_m3')|float(0) %}
+          {{ (um + pre) | round(3) }}
+
+      # IDs, die 42_abrechnung_2025.yaml erwartet
+      - name: "whg01_wasser_anteil_eur_2025"
+        unique_id: whg01_wasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >
+          {% set m3 = states('sensor.whg01_wasser_kalt_m3_year_2025_mit_vormontage')|float(0) %}
+          {% set p  = states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')|float(0) %}
+          {{ (m3 * p) | round(2) }}
+
+      - name: "whg01_abwasser_anteil_eur_2025"
+        unique_id: whg01_abwasser_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >
+          {% set m3 = states('sensor.whg01_wasser_kalt_m3_year_2025_mit_vormontage')|float(0) %}
+          {% set p  = states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')|float(0) %}
+          {{ (m3 * p) | round(2) }}
+
+################################################################################
+# WARMWASSER (noch nicht montiert – gleiche Logik; Topic ggf. anpassen)
+# TODO ggf. Topic anpassen falls dein Add-on einen anderen Namen nutzt
+################################################################################
+mqtt:
+  sensor:
+    - name: "whg01_wasserzaehler_total_m3_warm"
+      unique_id: whg01_wasserzaehler_total_m3_warm
+      state_topic: "wmbusmeters/Wasserzaehler_Whg01_Warm"
+      value_template: "{{ value_json.total_m3 | float(0) }}"
+      unit_of_measurement: "m³"
+      device_class: water
+      state_class: total_increasing
+      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01_Warm"
+
+utility_meter:
+  whg01_wasser_warm_m3_year_2025:
+    name: "WHG01 Wasser warm Jahr 2025"
+    source: sensor.whg01_wasserzaehler_total_m3_warm
+    cycle: yearly
+
+input_number:
+  whg01_wasser_warm_vormontage_2025_m3:
+    name: "WHG01 Wasser warm – Verbrauch vor Montage 2025 [m³]"
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+    unit_of_measurement: "m³"
+
+template:
+  - sensor:
+      - name: "whg01_wasser_warm_m3_year_2025_mit_vormontage"
+        unique_id: whg01_wasser_warm_m3_year_2025_mit_vormontage
+        unit_of_measurement: "m³"
+        state: >
+          {% set um = states('sensor.whg01_wasser_warm_m3_year_2025')|float(0) %}
+          {% set pre = states('input_number.whg01_wasser_warm_vormontage_2025_m3')|float(0) %}
+          {{ (um + pre) | round(3) }}
+
+      - name: "whg01_wasser_warm_anteil_eur_2025"
+        unique_id: whg01_wasser_warm_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >
+          {% set m3 = states('sensor.whg01_wasser_warm_m3_year_2025_mit_vormontage')|float(0) %}
+          {% set p  = states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')|float(0) %}
+          {{ (m3 * p) | round(2) }}
+
+      - name: "whg01_abwasser_warm_anteil_eur_2025"
+        unique_id: whg01_abwasser_warm_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >
+          {% set m3 = states('sensor.whg01_wasser_warm_m3_year_2025_mit_vormontage')|float(0) %}
+          {% set p  = states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')|float(0) %}
+          {{ (m3 * p) | round(2) }}
+
+################################################################################
+# WMZ – Wärmemenge (kWh) – (noch nicht montiert; Topic aus deinem Beispiel)
+# TODO ggf. Topic anpassen falls dein Add-on einen anderen Namen nutzt
+################################################################################
+mqtt:
+  sensor:
+    - name: "whg01_wmz_total_kwh"
+      unique_id: whg01_wmz_total_kwh
+      state_topic: "wmbusmeters/sensostar_wmz_94857143"
+      value_template: "{{ value_json.total_kwh | float(0) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      json_attributes_topic: "wmbusmeters/sensostar_wmz_94857143"
+
+utility_meter:
+  whg01_wmz_kwh_year_2025:
+    name: "WHG01 WMZ Jahr 2025"
+    source: sensor.whg01_wmz_total_kwh
+    cycle: yearly
+
+input_number:
+  whg01_wmz_vormontage_2025_kwh:
+    name: "WHG01 WMZ – Verbrauch vor Montage 2025 [kWh]"
+    min: 0
+    max: 100000
+    step: 0.1
+    mode: box
+    unit_of_measurement: "kWh"
+
+template:
+  - sensor:
+      - name: "whg01_wmz_kwh_year_2025_mit_vormontage"
+        unique_id: whg01_wmz_kwh_year_2025_mit_vormontage
+        unit_of_measurement: "kWh"
+        state: >
+          {% set um = states('sensor.whg01_wmz_kwh_year_2025')|float(0) %}
+          {% set pre = states('input_number.whg01_wmz_vormontage_2025_kwh')|float(0) %}
+          {{ (um + pre) | round(1) }}
+
+      # Optionaler €-Sensor, falls du einen Wärme-Preishelper hast:
+      - name: "whg01_wmz_anteil_eur_2025"
+        unique_id: whg01_wmz_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >
+          {% set kwh = states('sensor.whg01_wmz_kwh_year_2025_mit_vormontage')|float(0) %}
+          {% set p   = states('input_number.haus_kosten_waermemenge_arbeitspreis_eur_kwh')|float(0) %}
+          {{ (kwh * p) | round(2) }}
+
+################################################################################
+# STROM / WÄRMEPUMPE (kWh) – Quelle = dein Unterzähler (Entity-ID ggf. anpassen)
+# TODO ERSETZEN: sensor.whg01_wp_total_kwh → deine reale Entity-ID des WP/WHG01-Zählers
+################################################################################
+# HINWEIS: Falls dein WP-Zähler per MQTT kommt, kannst du ihn analog als mqtt.sensor definieren.
+# Wenn er bereits als Entity existiert, genügt das Utility Meter + €-Sensoren.
+
+utility_meter:
+  whg01_strom_wp_kwh_year_2025:
+    name: "WHG01 Strom/WP Jahr 2025"
+    source: sensor.whg01_wp_total_kwh   # TODO: anpassen auf deine echte Entity
+    cycle: yearly
+
+input_number:
+  whg01_strom_wp_vormontage_2025_kwh:
+    name: "WHG01 Strom/WP – Verbrauch vor Montage 2025 [kWh]"
+    min: 0
+    max: 100000
+    step: 0.1
+    mode: box
+    unit_of_measurement: "kWh"
+
+  # Grundpreis-Anteil für WHG01 (jährlich) – falls du ihn je Wohnung fix verteilst
+  whg01_strom_grundpreis_anteil_2025_eur:
+    name: "WHG01 Strom – Grundpreis-Anteil 2025 [€]"
+    min: 0
+    max: 100000
+    step: 0.01
+    mode: box
+    unit_of_measurement: "€"
+
+template:
+  - sensor:
+      - name: "whg01_strom_wp_kwh_year_2025_mit_vormontage"
+        unique_id: whg01_strom_wp_kwh_year_2025_mit_vormontage
+        unit_of_measurement: "kWh"
+        state: >
+          {% set um = states('sensor.whg01_strom_wp_kwh_year_2025')|float(0) %}
+          {% set pre = states('input_number.whg01_strom_wp_vormontage_2025_kwh')|float(0) %}
+          {{ (um + pre) | round(1) }}
+
+      # Variabler Anteil € (kWh × Arbeitspreis) – hier: dein Tibber-Preishelper
+      - name: "whg01_strom_variabel_anteil_eur_2025"
+        unique_id: whg01_strom_variabel_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: >
+          {% set kwh = states('sensor.whg01_strom_wp_kwh_year_2025_mit_vormontage')|float(0) %}
+          {% set p   = states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh')|float(0) %}
+          {{ (kwh * p) | round(2) }}
+
+      # Grundpreis-Anteil € (direkt aus Eingabefeld, falls du ihn fix zuteilst)
+      - name: "whg01_strom_grundpreis_anteil_eur_2025"
+        unique_id: whg01_strom_grundpreis_anteil_eur_2025
+        unit_of_measurement: "€"
+        state: "{{ states('input_number.whg01_strom_grundpreis_anteil_2025_eur') | float(0) | round(2) }}"
