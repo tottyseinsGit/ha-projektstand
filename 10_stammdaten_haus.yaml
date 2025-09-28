@@ -1,5 +1,5 @@
 # /config/packages/10_stammdaten_haus.yaml
-# Stammdaten – HAUS (zeitlos)
+# Stammdaten – HAUS (jahresneutral)
 
 input_number:
   haus_verteilstellen_anzahl:
@@ -10,7 +10,7 @@ input_number:
     mode: box
     unit_of_measurement: "Stellen"
 
-  abrechnung_jahr:
+  haus_abrechnung_jahr:              # ← vormals: abrechnung_jahr
     name: "Haus – Abrechnungsjahr"
     min: 1990
     max: 2100

@@ -1,65 +1,34 @@
-# Datei: /config/packages/31_zaehler_haus_wp_strom.yaml
-#
-# Zweck:
-#  - Wärmepumpen-Stromverbrauch 2025 nach KW-Vorbild abbilden:
-#    * Year-Zähler (Utility Meter) ab jetzt bis 31.12.
-#    * Vormontage-Wert (Jan 1 → Montagedatum) manuell/geschätzt
-#    * Jahr-gesamt = Vormontage + Year
-#    * Kosten 2025 = kWh_gesamt_2025 * Arbeitspreis €/kWh
-#
-# Quellen/abhängige Entities:
-#  - Zähler gesamt seit Montage (kumulativ): sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh
-#  - Arbeitspreis Strom €/kWh: input_number.haus_kosten_strom_arbeitspreis_eur_kwh
-#
-# Namensschema (deine Regeln):
-#   <domain>.<area>_<device>_<property>[_<scope>]
-#   friendly_name: "Raum/Area – Gerät: Messgröße [Einheit]"
+# /config/packages/31_zaehler_haus_wp_strom.yaml
+# Haus – Wärmepumpe: Strom (jahresneutral)
 
 utility_meter:
-  haus_wp_strom_kwh_year:
-    source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh
+  haus_strom_wp_kwh_year:
+    name: "Haus – WP Strom: Jahr"
+    source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh   # ← Quelle bei dir prüfen
     cycle: yearly
-    # Tipp: Falls das UTM erst nach der Montage angelegt wurde, ist das ok.
-    # "year" bildet (Montage→31.12.) ab. Jan→Montage kommt über den Vormontage-Helper.
-    name: "Haus – WP: Strom [kWh/Jahr]"
-    # state_class des UTM ist automatisch korrekt (total_increasing auf die Quelle).
 
 input_number:
-  haus_wp_strom_vormontage_kwh_2025:
-    name: "Haus – WP: Vormontage Strom 2025 [kWh]"
+  haus_strom_wp_vormontage_kwh:
+    name: "Haus – WP Strom: Vormontage [kWh]"
     min: 0
     max: 100000
-    step: 0.001
+    step: 0.1
     mode: box
     unit_of_measurement: "kWh"
-    icon: mdi:counter
 
 template:
   - sensor:
-      - name: "Haus – WP: Strom 2025 gesamt [kWh]"
-        unique_id: haus_wp_strom_kwh_gesamt_2025
-        state: >
-          {% set year = states('sensor.haus_wp_strom_kwh_year') | float(0) %}
-          {% set pre  = states('input_number.haus_wp_strom_vormontage_kwh_2025') | float(0) %}
-          {{ (year + pre) | round(3) }}
-        unit_of_measurement: "kWh"
+      - name: haus_strom_wp_kwh_gesamt
+        unique_id: haus_strom_wp_kwh_gesamt
         device_class: energy
         state_class: total
-        attributes:
-          montage_zaehler_seit: "{{ states('sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh') }}"
-          jahr_anteil_kwh: "{{ states('sensor.haus_wp_strom_kwh_year') }}"
-          vormontage_kwh_2025: "{{ states('input_number.haus_wp_strom_vormontage_kwh_2025') }}"
-          hinweis: "2025_gesamt = Vormontage (Jan→Montage) + Year (Montage→31.12.)"
-
-      - name: "Haus – WP: Stromkosten 2025 [€]"
-        unique_id: haus_wp_strom_kosten_eur_2025
+        unit_of_measurement: "kWh"
+        availability: >
+          {{ states('sensor.haus_strom_wp_kwh_year') not in ['unknown','unavailable','']
+             or states('input_number.haus_strom_wp_vormontage_kwh') not in ['unknown','unavailable',''] }}
         state: >
-          {% set kwh   = states('sensor.haus_wp_strom_kwh_gesamt_2025') | float(0) %}
-          {% set ap    = states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') | float(0) %}
-          {{ (kwh * ap) | round(2) }}
-        unit_of_measurement: "€"
-        icon: mdi:currency-eur
+          {{ ( states('sensor.haus_strom_wp_kwh_year')|float(0)
+             + states('input_number.haus_strom_wp_vormontage_kwh')|float(0) ) | round(1) }}
         attributes:
-          arbeitspreis_eur_kwh: "{{ states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') }}"
-          verbrauch_kwh_2025: "{{ states('sensor.haus_wp_strom_kwh_gesamt_2025') }}"
-          hinweis: "Grundpreis-Verteilung separat (Hauskosten)."
+          utm_entity: sensor.haus_strom_wp_kwh_year
+          vormontage_kwh: "{{ states('input_number.haus_strom_wp_vormontage_kwh') }}"

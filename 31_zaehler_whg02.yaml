@@ -1,31 +1,34 @@
 # /config/packages/31_zaehler_whg02.yaml
-# Zähler & Eichfristen – WHG02
+# Zähler & Eichfristen – WHG02 (+ MQTT-Felder WaterStar M)
 
+# ───────────────────────────────────────────────────────────────────────────────
+# Stammdaten
+# ───────────────────────────────────────────────────────────────────────────────
 input_text:
   whg02_wasser_kalt_meter_id:
-    name: "WHG02 – KW: Meter-ID"
+    name: "WHG02 – Wasser kalt: Meter-ID"
     max: 32
   whg02_wasser_kalt_meter_key:
-    name: "WHG02 – KW: Meter-Key (HEX)"
+    name: "WHG02 – Wasser kalt: Meter-Key (HEX)"
     max: 64
   whg02_wasser_kalt_hersteller:
-    name: "WHG02 – KW: Hersteller/Typ"
+    name: "WHG02 – Wasser kalt: Hersteller/Typ"
     max: 80
   whg02_wasser_kalt_standort:
-    name: "WHG02 – KW: Standort"
+    name: "WHG02 – Wasser kalt: Standort"
     max: 80
 
   whg02_wasser_warm_meter_id:
-    name: "WHG02 – WW: Meter-ID"
+    name: "WHG02 – Wasser warm: Meter-ID"
     max: 32
   whg02_wasser_warm_meter_key:
-    name: "WHG02 – WW: Meter-Key (HEX)"
+    name: "WHG02 – Wasser warm: Meter-Key (HEX)"
     max: 64
   whg02_wasser_warm_hersteller:
-    name: "WHG02 – WW: Hersteller/Typ"
+    name: "WHG02 – Wasser warm: Hersteller/Typ"
     max: 80
   whg02_wasser_warm_standort:
-    name: "WHG02 – WW: Standort"
+    name: "WHG02 – Wasser warm: Standort"
     max: 80
 
   whg02_wmz_meter_id:
@@ -56,14 +59,14 @@ input_text:
 
 input_number:
   whg02_kw_eichfrist_jahre:
-    name: "WHG02 – KW: Eichfrist [Jahre]"
+    name: "WHG02 – Wasser kalt: Eichfrist [Jahre]"
     min: 1
     max: 20
     step: 1
     mode: box
     initial: 6
   whg02_ww_eichfrist_jahre:
-    name: "WHG02 – WW: Eichfrist [Jahre]"
+    name: "WHG02 – Wasser warm: Eichfrist [Jahre]"
     min: 1
     max: 20
     step: 1
@@ -86,11 +89,11 @@ input_number:
 
 input_datetime:
   whg02_wasser_kalt_montage:
-    name: "WHG02 – KW: Montage"
+    name: "WHG02 – Wasser kalt: Montage"
     has_date: true
     has_time: false
   whg02_wasser_warm_montage:
-    name: "WHG02 – WW: Montage"
+    name: "WHG02 – Wasser warm: Montage"
     has_date: true
     has_time: false
   whg02_wmz_montage:
@@ -102,6 +105,9 @@ input_datetime:
     has_date: true
     has_time: false
 
+# ───────────────────────────────────────────────────────────────────────────────
+# Ablauf der Eichfristen (Timestamp jetzt mit Uhrzeit)
+# ───────────────────────────────────────────────────────────────────────────────
 template:
   - sensor:
       - name: whg02_kw_eich_ablauf
@@ -110,33 +116,107 @@ template:
         state: >-
           {% set d = states('input_datetime.whg02_wasser_kalt_montage') %}
           {% set y = states('input_number.whg02_kw_eichfrist_jahre')|int(0) %}
-          {% if d not in ['unknown','unavailable',''] and y>0 %}
-            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% if d not in ['unknown','unavailable',''] and y > 0 %}
+            {% set base = as_datetime(d) %}
+            {{ as_local(base.replace(year=base.year + y)).isoformat() }}
           {% else %} {{ none }} {% endif %}
+
       - name: whg02_ww_eich_ablauf
         unique_id: whg02_ww_eich_ablauf
         device_class: timestamp
         state: >-
           {% set d = states('input_datetime.whg02_wasser_warm_montage') %}
           {% set y = states('input_number.whg02_ww_eichfrist_jahre')|int(0) %}
-          {% if d not in ['unknown','unavailable',''] and y>0 %}
-            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% if d not in ['unknown','unavailable',''] and y > 0 %}
+            {% set base = as_datetime(d) %}
+            {{ as_local(base.replace(year=base.year + y)).isoformat() }}
           {% else %} {{ none }} {% endif %}
+
       - name: whg02_wmz_eich_ablauf
         unique_id: whg02_wmz_eich_ablauf
         device_class: timestamp
         state: >-
           {% set d = states('input_datetime.whg02_wmz_montage') %}
           {% set y = states('input_number.whg02_wmz_eichfrist_jahre')|int(0) %}
-          {% if d not in ['unknown','unavailable',''] and y>0 %}
-            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% if d not in ['unknown','unavailable',''] and y > 0 %}
+            {% set base = as_datetime(d) %}
+            {{ as_local(base.replace(year=base.year + y)).isoformat() }}
           {% else %} {{ none }} {% endif %}
+
       - name: whg02_strom_eich_ablauf
         unique_id: whg02_strom_eich_ablauf
         device_class: timestamp
         state: >-
           {% set d = states('input_datetime.whg02_strom_montage') %}
           {% set y = states('input_number.whg02_strom_eichfrist_jahre')|int(0) %}
-          {% if d not in ['unknown','unavailable',''] and y>0 %}
-            {{ (as_datetime(d).date().replace(year=as_datetime(d).year + y)).isoformat() }}
+          {% if d not in ['unknown','unavailable',''] and y > 0 %}
+            {% set base = as_datetime(d) %}
+            {{ as_local(base.replace(year=base.year + y)).isoformat() }}
           {% else %} {{ none }} {% endif %}
+
+# ───────────────────────────────────────────────────────────────────────────────
+# MQTT → WaterStar M (wmbusmeters)
+# ───────────────────────────────────────────────────────────────────────────────
+mqtt:
+  sensor:
+    - name: "whg02_wasser_total_m3"
+      unique_id: whg02_wasser_total_m3
+      state_topic: "wmbusmeters/Wasserzaehler_Whg02"
+      value_template: "{{ value_json.total_m3 | float(0) }}"
+      unit_of_measurement: "m³"
+      device_class: water
+      state_class: total_increasing
+      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg02"
+
+# ───────────────────────────────────────────────────────────────────────────────
+# Abgeleitete Anzeige-Felder (aus den MQTT-Attributen)
+# ───────────────────────────────────────────────────────────────────────────────
+template:
+  - sensor:
+      # Zählernummer (aus JSON id)
+      - name: "whg02_wasser_zaehlernummer"
+        unique_id: whg02_wasser_zaehlernummer
+        state: "{{ state_attr('sensor.whg02_wasser_total_m3','id') or 'unknown' }}"
+
+      # Hersteller/Modell (fest für WaterStar M)
+      - name: "whg02_wasser_hersteller"
+        unique_id: whg02_wasser_hersteller
+        state: "Engelmann"
+      - name: "whg02_wasser_modell"
+        unique_id: whg02_wasser_modell
+        state: "WaterStar M"
+
+      # Funkmodus (aus deiner Add-on-Konfig → C1)
+      - name: "whg02_wasser_funkmodus"
+        unique_id: whg02_wasser_funkmodus
+        state: "C1"
+
+      # Empfangspegel
+      - name: "whg02_wasser_rssi_dbm"
+        unique_id: whg02_wasser_rssi_dbm
+        unit_of_measurement: "dBm"
+        state: "{{ state_attr('sensor.whg02_wasser_total_m3','rssi_dbm') | default('unknown') }}"
+
+      # Letztes empfangenes Telegramm (UTC ISO)
+      - name: "whg02_wasser_telegramm_zeit"
+        unique_id: whg02_wasser_telegramm_zeit
+        device_class: timestamp
+        state: >
+          {% set ts = state_attr('sensor.whg02_wasser_total_m3','timestamp') %}
+          {{ ts if ts not in ['unknown','unavailable',None] else now().isoformat() }}
+
+      # Gerätezeit im Zähler (falls gesetzt)
+      - name: "whg02_wasser_meter_datetime"
+        unique_id: whg02_wasser_meter_datetime
+        device_class: timestamp
+        state: >
+          {% set dt = state_attr('sensor.whg02_wasser_total_m3','meter_datetime') %}
+          {{ (dt ~ ':00') if dt not in ['unknown','unavailable',None] else now().isoformat() }}
+
+      # Spiegel des Totalstands (für Karten, die nur Templates nehmen)
+      - name: "whg02_wasser_total_m3_spiegel"
+        unique_id: whg02_wasser_total_m3_spiegel
+        unit_of_measurement: "m³"
+        device_class: water
+        state_class: total_increasing
+        state: "{{ states('sensor.whg02_wasser_total_m3') | float(0) }}"

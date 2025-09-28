@@ -1,0 +1,17 @@
+automation:
+  - id: bk_snapshot_from_boolean
+    alias: "BK – Snapshot speichern (Schalter löst aus)"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.bk_snapshot_jetzt_speichern
+        to: "on"
+    action:
+      # vorhandene Snapshot-Automation auslösen (die mit „Button“)
+      - service: automation.trigger
+        target:
+          entity_id: automation.bk_snapshot_jetzt_speichern_button
+      # Schalter direkt wieder zurücksetzen
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.bk_snapshot_jetzt_speichern
+

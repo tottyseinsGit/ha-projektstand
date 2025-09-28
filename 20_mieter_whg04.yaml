@@ -1,5 +1,5 @@
 # /config/packages/20_mieter_whg04.yaml
-# Mieterstammdaten – Wohnung 04 (zeitlos)
+# Mieterstammdaten – Wohnung 04 (jahresneutral, konsistent gebündelt)
 
 input_text:
   whg04_mieter_vorname:
@@ -8,13 +8,13 @@ input_text:
   whg04_mieter_nachname:
     name: "WHG04 – Nachname"
     max: 64
-  whg04_phone:
+  whg04_mieter_telefon:
     name: "WHG04 – Telefon"
     max: 20
-  whg04_tenant_email:
+  whg04_mieter_email:
     name: "WHG04 – E-Mail"
     max: 120
-  whg04_notizen:
+  whg04_mieter_notizen:
     name: "WHG04 – Notizen"
     max: 240
 
@@ -26,6 +26,7 @@ input_number:
     step: 0.01
     mode: box
     unit_of_measurement: "m²"
+
   whg04_personen:
     name: "WHG04 – Personen [Anzahl]"
     min: 0
@@ -34,43 +35,7 @@ input_number:
     mode: box
     unit_of_measurement: "Personen"
 
-  # Monats-Kosten
-  whg04_miete_kalt_eur_monat:
-    name: "WHG04 – Miete kalt [€/Monat]"
-    min: 0
-    max: 10000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
-  whg04_voraus_bk_eur_monat:
-    name: "WHG04 – Vorauszahlung Betriebskosten [€/Monat]"
-    min: 0
-    max: 10000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
-  whg04_voraus_hk_eur_monat:
-    name: "WHG04 – Vorauszahlung Heizung/WW [€/Monat]"
-    min: 0
-    max: 10000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
-  whg04_voraus_strom_eur_monat:
-    name: "WHG04 – Vorauszahlung Strom [€/Monat]"
-    min: 0
-    max: 10000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
-  whg04_voraus_ev_charger_eur_monat:
-    name: "WHG04 – Vorauszahlung EV-Charger [€/Monat]"
-    min: 0
-    max: 10000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
-  whg04_kaution_eur:
+  whg04_mieter_kaution_eur:
     name: "WHG04 – Kaution [€]"
     min: 0
     max: 100000
