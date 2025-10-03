@@ -1,0 +1,86 @@
+# /config/packages/42_abrechnung_whg01_wasser.yaml
+# WHG01 Wasser – jahresneutral
+# - Quelle: sensor.whg01_wasser_total_m3 (muss bereits existieren)
+# - Jahresverbrauch: utility_meter (cycle: yearly)
+# - Fallback: manuelle Eingabefelder (Start/Ende)
+# - Preise: dynamisch je 'input_number.abrechnungsjahr' mit Fallback auf neutrale Helper
+
+utility_meter:
+  whg01_wasser_m3_year:
+    name: "WHG01 Wasser – Jahr"
+    source: sensor.whg01_wasser_total_m3
+    cycle: yearly
+
+input_number:
+  whg01_wasser_start_m3:
+    name: "WHG01 Wasser – Jahresstart [m³]"
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+    unit_of_measurement: "m³"
+
+  whg01_wasser_end_m3:
+    name: "WHG01 Wasser – Jahresende [m³]"
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+    unit_of_measurement: "m³"
+
+template:
+  - sensor:
+      # Verbrauch m³: bevorzugt Utility-Meter, sonst manuell (Ende-Start)
+      - name: whg01_wasser_verbrauch_m3
+        unique_id: whg01_wasser_verbrauch_m3
+        unit_of_measurement: "m³"
+        state: >-
+          {% set um = states('sensor.whg01_wasser_m3_year') %}
+          {% if um not in ['unknown','unavailable','','none','None'] %}
+            {{ um | float(0) }}
+          {% else %}
+            {{
+              (
+                states('input_number.whg01_wasser_end_m3')|float(0)
+                - states('input_number.whg01_wasser_start_m3')|float(0)
+              ) | max(0) | round(3)
+            }}
+          {% endif %}
+        attributes:
+          quelle_verbrauch: >-
+            {% set um = states('sensor.whg01_wasser_m3_year') %}
+            {{ 'utility_meter' if um not in ['unknown','unavailable','','none','None'] else 'manuell (end-start)' }}
+          utility_source_entity: sensor.whg01_wasser_total_m3
+
+      # Gesamtkosten € = m³ * (Wasser €/m³ + Abwasser €/m³), Preise dynamisch je Abrechnungsjahr
+      - name: whg01_wasser_kosten_eur
+        unique_id: whg01_wasser_kosten_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set m3 = states('sensor.whg01_wasser_verbrauch_m3')|float(0) %}
+          {% set y  = states('input_number.abrechnungsjahr')|int(2025) %}
+          {% set pw_id = 'input_number.haus_kosten_wasser_arbeitspreis_eur_m3_' ~ y %}
+          {% set pa_id = 'input_number.haus_kosten_abwasser_arbeitspreis_eur_m3_' ~ y %}
+          {% set pw = states(pw_id) %}
+          {% set pa = states(pa_id) %}
+          {% if pw in ['unknown','unavailable','','none','None'] %}
+            {% set pw = states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3') %}
+          {% endif %}
+          {% if pa in ['unknown','unavailable','','none','None'] %}
+            {% set pa = states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3') %}
+          {% endif %}
+          {{ (m3 * ((pw|float(0)) + (pa|float(0)))) | round(2) }}
+        attributes:
+          jahr: >-
+            {{ states('input_number.abrechnungsjahr')|int(2025) }}
+          preis_wasser_eur_m3: >-
+            {% set y = states('input_number.abrechnungsjahr')|int(2025) %}
+            {% set eid = 'input_number.haus_kosten_wasser_arbeitspreis_eur_m3_' ~ y %}
+            {% set v = states(eid) %}
+            {{ (v if v not in ['unknown','unavailable','','none','None'] else states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')) | float(0) }}
+          preis_abwasser_eur_m3: >-
+            {% set y = states('input_number.abrechnungsjahr')|int(2025) %}
+            {% set eid = 'input_number.haus_kosten_abwasser_arbeitspreis_eur_m3_' ~ y %}
+            {% set v = states(eid) %}
+            {{ (v if v not in ['unknown','unavailable','','none','None'] else states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')) | float(0) }}

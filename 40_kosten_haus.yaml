@@ -1,35 +1,25 @@
-# /config/packages/40_kosten_2025_haus.yaml
-# Allgemeinstrom 2025 – getrennt: Variabel (EPEX) + Nachtrag 1.1.–Go-Live (kWh × Pauschalpreis)
-# - Fixkosten bleiben vorhanden, sind hier aber nicht Gegenstand
-# - Neu in dieser Version:
-#   * input_datetime.haus_allgemeinstrom_golive_2025 – Go-Live Datum
-#   * input_number.haus_allgemeinstrom_baseline_kwh_pro_tag_2025 – Pauschal kWh/Tag (Schätzwert)
-#   * sensor.haus_allgemeinstrom_nachtrag_tage_2025 – Tage 1.1.–Go-Live
-#   * sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive – kWh Nachtrag (Tage × kWh/Tag)
-#   * sensor.haus_allgemeinstrom_var_nachtrag_eur_2025_jan1_golive – € Nachtrag (kWh × Preis)
-# - Bestehendes bleibt unverändert: Utility-Meter kWh (hour/day/month/year), EPEX-Preis, Startwert-Nachtrag (optional)
+# /config/packages/40_kosten_haus.yaml
+# Haus – Allgemeinstrom (jahresneutral)
+# - Quelle: sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh
+# - Utility-Meter: Stunde/Tag/Monat/Jahr
+# - Kosten variabel (EPEX), Fallback auf Durchschnittspreis
+# - Nachtrag 1.1. → Go-Live (tagebasiert) + Startwert-Methode
+# - Preise: dynamisch über input_number.abrechnungsjahr (falls vorhanden)
+#           versucht zuerst jahresspezifische Helper mit Suffix _<jahr>,
+#           fällt sonst auf neutrale Helper zurück.
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Inputs (neutral)
+# ────────────────────────────────────────────────────────────────────────────────
+input_datetime:
+  haus_allgemeinstrom_golive:
+    name: "Haus – Kosten: Go-Live Datum Strom"
+    has_date: true
+    has_time: false
 
 input_number:
-  # Jahres-Grundgebühr (weiter vorhanden, für diese Position hier nicht relevant)
-  haus_betriebskosten_strom_grundgebuehr_2025:
-    name: "Haus – Betriebskosten: Strom Grundgebühr 2025 [€/Jahr]"
-    min: 0
-    max: 100000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
-
-  # Optional: manueller Jahresverbrauch (hier nicht genutzt)
-  haus_betriebskosten_hausstrom_zaehlerstand_kwh_2025:
-    name: "Haus – Betriebskosten: Hausstrom Zählerstand 2025 [kWh]"
-    min: 0
-    max: 10000000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "kWh"
-
-  # Durchschnittspreis 2025 (€/kWh) – Fallback und für Nachtrag 1.1.–Go-Live
-  haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025:
+  # Durchschnittspreis (neutral). Optional zusätzlich: _<jahr> (z. B. …_2025)
+  haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh:
     name: "Haus – Kosten: Strom Arbeitspreis [€/kWh]"
     min: 0
     max: 10
@@ -37,24 +27,19 @@ input_number:
     mode: box
     unit_of_measurement: "€/kWh"
 
-  # NEU: Pauschaler Tagesverbrauch (kWh/Tag) für den Nachtrag 1.1.–Go-Live
-  haus_allgemeinstrom_baseline_kwh_pro_tag_2025:
-    name: "Haus – Kosten: Strom kWh/Tag (Schätzung) 2025"
+  # Pauschaler kWh/Tag für Nachtrag 1.1. → Go-Live
+  haus_allgemeinstrom_baseline_kwh_pro_tag:
+    name: "Haus – Kosten: Strom kWh/Tag (Schätzung)"
     min: 0
     max: 1000
     step: 0.01
     mode: box
     unit_of_measurement: "kWh/Tag"
 
-input_datetime:
-  # NEU: Go-Live Datum (Start der HA-Erfassung)
-  haus_allgemeinstrom_golive_2025:
-    name: "Haus – Kosten: Go-Live Datum Strom (2025)"
-    has_date: true
-    has_time: false
-
+# ────────────────────────────────────────────────────────────────────────────────
+# Utility-Meter (neutral)
+# ────────────────────────────────────────────────────────────────────────────────
 utility_meter:
-  # kWh je Periode aus Gesamtzähler (S0 Kanal 1)
   haus_allgemein_energy_hour_kwh:
     source: sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh
     cycle: hourly
@@ -68,11 +53,12 @@ utility_meter:
     source: sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh
     cycle: yearly
 
+# ────────────────────────────────────────────────────────────────────────────────
+# Templates (neutral)
+# ────────────────────────────────────────────────────────────────────────────────
 template:
   - sensor:
-      # ===============================
-      # VARIABEL – live €/h (EPEX)
-      # ===============================
+      # Kosten je Stunde = kWh Stunde × EPEX (net price bevorzugt), Fallback Durchschnittspreis
       - name: haus_allgemeinstrom_var_stunde_eur
         unique_id: haus_allgemeinstrom_var_stunde_eur
         unit_of_measurement: "€"
@@ -83,93 +69,101 @@ template:
           {% set rn = states('sensor.epex_spot_data_net_price') %}
           {% set rg = states('sensor.epex_spot_data_price') %}
           {% set chosen = rn if rn not in ['unknown','unavailable','none','None',''] else rg %}
-          {% if chosen in ['unknown','unavailable','none','None',''] %}
-            {% set chosen = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') %}
-          {% endif %}
-          {{ (kwh * (chosen | float(0))) | round(4) }}
+
+          {# dynamischer Durchschnittspreis (Jahrssuffix optional) #}
+          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set p_id_y = 'input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_' ~ y %}
+          {% set p_y    = states(p_id_y) %}
+          {% set p_neu  = (chosen if chosen not in ['unknown','unavailable','none','None',''] else (p_y if p_y not in ['unknown','unavailable','none','None',''] else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh'))) %}
+          {{ (kwh * (p_neu | float(0))) | round(4) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Verbrauchskosten [€/h]"
           kwh_stunde: "{{ states('sensor.haus_allgemein_energy_hour_kwh') | float(0) }}"
 
-      # ============================================
-      # NACHTRAG – 1.1.2025 bis Go-Live (pauschal)
-      # ============================================
-      # NEU: Tage 1.1. → Go-Live (>=0)
-      - name: haus_allgemeinstrom_nachtrag_tage_2025
-        unique_id: haus_allgemeinstrom_nachtrag_tage_2025
+      # Nachtragstage 1.1.(Jahr) → Go-Live (>=0)
+      - name: haus_allgemeinstrom_nachtrag_tage
+        unique_id: haus_allgemeinstrom_nachtrag_tage
         unit_of_measurement: "d"
         state_class: measurement
         state: >-
-          {% set golive = states('input_datetime.haus_allgemeinstrom_golive_2025') %}
-          {% set start = as_datetime('2025-01-01') %}
-          {% set dgo = as_datetime(golive) if golive not in ['unknown','unavailable','none','None',''] else none %}
-          {% set days = ((as_timestamp(dgo) - as_timestamp(start)) / 86400) if dgo else 0 %}
+          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set golive = states('input_datetime.haus_allgemeinstrom_golive') %}
+          {% set start  = as_datetime(y ~ '-01-01') %}
+          {% set dgo    = as_datetime(golive) if golive not in ['unknown','unavailable','none','None',''] else none %}
+          {% set days   = ((as_timestamp(dgo) - as_timestamp(start)) / 86400) if dgo else 0 %}
           {{ (days | int(0)) if days > 0 else 0 }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag: Tage 1.1.–Go-Live"
+          jahr: >-
+            {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+            {{ y }}
 
-      # NEU: kWh Nachtrag = Tage × kWh/Tag (Schätzung)
-      - name: haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive
-        unique_id: haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive
+      # kWh Nachtrag (tagebasiert)
+      - name: haus_allgemeinstrom_var_nachtrag_kwh_jan1_golive
+        unique_id: haus_allgemeinstrom_var_nachtrag_kwh_jan1_golive
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: measurement
         state: >-
-          {% set tage = states('sensor.haus_allgemeinstrom_nachtrag_tage_2025') | float(0) %}
-          {% set kwh_tag = states('input_number.haus_allgemeinstrom_baseline_kwh_pro_tag_2025') | float(0) %}
+          {% set tage = states('sensor.haus_allgemeinstrom_nachtrag_tage') | float(0) %}
+          {% set kwh_tag = states('input_number.haus_allgemeinstrom_baseline_kwh_pro_tag') | float(0) %}
           {{ (tage * kwh_tag) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag 1.1.–Go-Live [kWh]"
-          tage: "{{ states('sensor.haus_allgemeinstrom_nachtrag_tage_2025') | float(0) }}"
-          kwh_pro_tag: "{{ states('input_number.haus_allgemeinstrom_baseline_kwh_pro_tag_2025') | float(0) }}"
+          tage: "{{ states('sensor.haus_allgemeinstrom_nachtrag_tage') | float(0) }}"
+          kwh_pro_tag: "{{ states('input_number.haus_allgemeinstrom_baseline_kwh_pro_tag') | float(0) }}"
 
-      # NEU: € Nachtrag = kWh Nachtrag × Durchschnittspreis
-      - name: haus_allgemeinstrom_var_nachtrag_eur_2025_jan1_golive
-        unique_id: haus_allgemeinstrom_var_nachtrag_eur_2025_jan1_golive
+      # € Nachtrag (tagebasiert) = kWh × Durchschnittspreis
+      - name: haus_allgemeinstrom_var_nachtrag_eur_jan1_golive
+        unique_id: haus_allgemeinstrom_var_nachtrag_eur_jan1_golive
         unit_of_measurement: "€"
         device_class: monetary
         state_class: measurement
         state: >-
-          {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive') | float(0) %}
-          {% set p = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
+          {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_jan1_golive') | float(0) %}
+          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set p_id_y = 'input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_' ~ y %}
+          {% set p_y    = states(p_id_y) %}
+          {% set p      = (p_y if p_y not in ['unknown','unavailable','none','None',''] else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh')) | float(0) %}
           {{ (kwh * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag 1.1.–Go-Live [€]"
-          nachtrag_kwh: "{{ states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025_jan1_golive') | float(0) }}"
-          preis_eur_kwh: "{{ states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) }}"
 
-      # (Bestehender Startwert-Nachtrag bleibt – optional nutzbar)
-      - name: haus_allgemeinstrom_var_nachtrag_kwh_2025
-        unique_id: haus_allgemeinstrom_var_nachtrag_kwh_2025
+      # Nachtrag (Startwert-Methode) – optional wie bisher
+      - name: haus_allgemeinstrom_var_nachtrag_kwh_startwert
+        unique_id: haus_allgemeinstrom_var_nachtrag_kwh_startwert
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: measurement
         state: >-
           {% set gesamt = states('sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh') | float(0) %}
-          {% set start = states('number.zaehler_haus_allgemein_haus_zahler_startwert_kanal_1_kwh') | float(0) %}
-          {% set year  = states('sensor.haus_allgemein_energy_year_kwh') | float(0) %}
-          {% set diff  = (gesamt - start - year) %}
+          {% set start  = states('number.zaehler_haus_allgemein_haus_zahler_startwert_kanal_1_kwh') | float(0) %}
+          {% set year   = states('sensor.haus_allgemein_energy_year_kwh') | float(0) %}
+          {% set diff   = (gesamt - start - year) %}
           {{ (diff if diff > 0 else 0) | round(3) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag (Startwert-Methode) [kWh]"
 
-      - name: haus_allgemeinstrom_var_nachtrag_eur_2025
-        unique_id: haus_allgemeinstrom_var_nachtrag_eur_2025
+      - name: haus_allgemeinstrom_var_nachtrag_eur_startwert
+        unique_id: haus_allgemeinstrom_var_nachtrag_eur_startwert
         unit_of_measurement: "€"
         device_class: monetary
         state_class: measurement
         state: >-
-          {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_2025') | float(0) %}
-          {% set p   = states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_2025') | float(0) %}
+          {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_startwert') | float(0) %}
+          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set p_id_y = 'input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_' ~ y %}
+          {% set p_y    = states(p_id_y) %}
+          {% set p      = (p_y if p_y not in ['unknown','unavailable','none','None',''] else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh')) | float(0) %}
           {{ (kwh * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag (Startwert-Methode) [€]"
 
-  # Trigger-Template: aktualisiere 'Tage' automatisch um Mitternacht
+  # Trigger-Template: aktualisiert die 'Tage' jede Nacht automatisch
   - trigger:
       - platform: time
         at: "00:00:00"
     sensor:
-      - name: haus_allgemeinstrom_nachtrag_tage_2025_autorefresh
-        unique_id: haus_allgemeinstrom_nachtrag_tage_2025_autorefresh
-        state: "{{ states('sensor.haus_allgemeinstrom_nachtrag_tage_2025') }}"
+      - name: haus_allgemeinstrom_nachtrag_tage_autorefresh
+        unique_id: haus_allgemeinstrom_nachtrag_tage_autorefresh
+        state: "{{ states('sensor.haus_allgemeinstrom_nachtrag_tage') }}"

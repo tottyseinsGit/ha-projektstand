@@ -1,0 +1,176 @@
+# /config/packages/42_abrechnung.yaml
+# Endabrechnung – Haus gesamt + Wohnungssummen (jahresneutral)
+# Steuerung des Jahres über input_number.abrechnungsjahr (optional).
+# Fallback: aktuelles Jahr (now().year).
+#
+# Erwartete vorhandene Quell-Sensoren/Helper:
+# - Haus:   sensor.haus_allgemeinstrom_gesamt_eur_<jahr>,
+#           sensor.haus_wasser_kosten_eur_<jahr>,
+#           sensor.haus_abwasser_kosten_eur_<jahr>,
+#           input_number.grundsteuer_eur_jahr_<jahr>,
+#           input_number.versicherung_eur_jahr_<jahr>,
+#           input_number.muell_eur_jahr_<jahr>,
+#           input_number.niederschlagswasser_eur_jahr_<jahr>,
+#           input_number.haus_betriebskosten_wartung_heizung_eur (neutral),
+#           input_number.haus_betriebskosten_abrechnungsservice_eur (neutral)
+# - Whg01..04: sensor.whg0X_strom_variabel_anteil_eur_<jahr>, … (alle Anteile)
+#
+# Alle *_<jahr>-Werte werden dynamisch zusammengesetzt; unbekannte Quellen zählen als 0.
+
+template:
+  - sensor:
+
+      # ===========================
+      # Hauskosten gesamt (EUR)
+      # ===========================
+      - name: haus_betriebskosten_gesamt_eur
+        unique_id: haus_betriebskosten_gesamt_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set invalid = ['unknown','unavailable','none','None',''] %}
+          {% set y = (
+               states('input_number.abrechnungsjahr')
+               if states('input_number.abrechnungsjahr') not in invalid else now().year
+             ) | int %}
+          {% set ids = [
+              'sensor.haus_allgemeinstrom_gesamt_eur_' ~ y,
+              'sensor.haus_wasser_kosten_eur_' ~ y,
+              'sensor.haus_abwasser_kosten_eur_' ~ y,
+              'input_number.grundsteuer_eur_jahr_' ~ y,
+              'input_number.versicherung_eur_jahr_' ~ y,
+              'input_number.muell_eur_jahr_' ~ y,
+              'input_number.niederschlagswasser_eur_jahr_' ~ y,
+              # neutrale Helper (ohne Jahreszahl)
+              'input_number.haus_betriebskosten_wartung_heizung_eur',
+              'input_number.haus_betriebskosten_abrechnungsservice_eur'
+            ] %}
+          {% set werte = ids | map('states') | map('float', 0) | list %}
+          {{ (werte | sum) | round(2) }}
+        attributes:
+          jahr: >-
+            {% set invalid = ['unknown','unavailable','none','None',''] %}
+            {{ (states('input_number.abrechnungsjahr')
+                if states('input_number.abrechnungsjahr') not in invalid else now().year) | int }}
+
+      # ===========================
+      # Wohnungssummen (EUR)
+      # ===========================
+      # Hilfstemplate zur Summenbildung für eine Wohnung (DRY per Jinja)
+      # Nutzung: gleiche Blocklogik für whg01..whg04
+
+      - name: whg01_betriebskosten_summe_eur
+        unique_id: whg01_betriebskosten_summe_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set invalid = ['unknown','unavailable','none','None',''] %}
+          {% set y = (states('input_number.abrechnungsjahr')
+                      if states('input_number.abrechnungsjahr') not in invalid else now().year) | int %}
+          {% set p = 'sensor.whg01_' %}
+          {% set ids = [
+            p ~ 'strom_variabel_anteil_eur_' ~ y,
+            p ~ 'strom_grundpreis_anteil_eur_' ~ y,
+            p ~ 'wasser_anteil_eur_' ~ y,
+            p ~ 'abwasser_anteil_eur_' ~ y,
+            p ~ 'grundsteuer_anteil_eur_' ~ y,
+            p ~ 'versicherung_anteil_eur_' ~ y,
+            p ~ 'muell_anteil_eur_' ~ y,
+            p ~ 'niederschlagswasser_anteil_eur_' ~ y,
+            p ~ 'wartung_heizung_anteil_eur_' ~ y,
+            p ~ 'abrechnungsservice_anteil_eur_' ~ y
+          ] %}
+          {% set werte = ids | map('states') | map('float', 0) | list %}
+          {{ (werte | sum) | round(2) }}
+        attributes:
+          jahr: >-
+            {% set invalid = ['unknown','unavailable','none','None',''] %}
+            {{ (states('input_number.abrechnungsjahr')
+                if states('input_number.abrechnungsjahr') not in invalid else now().year) | int }}
+
+      - name: whg02_betriebskosten_summe_eur
+        unique_id: whg02_betriebskosten_summe_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set invalid = ['unknown','unavailable','none','None',''] %}
+          {% set y = (states('input_number.abrechnungsjahr')
+                      if states('input_number.abrechnungsjahr') not in invalid else now().year) | int %}
+          {% set p = 'sensor.whg02_' %}
+          {% set ids = [
+            p ~ 'strom_variabel_anteil_eur_' ~ y,
+            p ~ 'strom_grundpreis_anteil_eur_' ~ y,
+            p ~ 'wasser_anteil_eur_' ~ y,
+            p ~ 'abwasser_anteil_eur_' ~ y,
+            p ~ 'grundsteuer_anteil_eur_' ~ y,
+            p ~ 'versicherung_anteil_eur_' ~ y,
+            p ~ 'muell_anteil_eur_' ~ y,
+            p ~ 'niederschlagswasser_anteil_er_' ~ y if false else p ~ 'niederschlagswasser_anteil_eur_' ~ y,
+            p ~ 'wartung_heizung_anteil_eur_' ~ y,
+            p ~ 'abrechnungsservice_anteil_eur_' ~ y
+          ] %}
+          {% set werte = ids | map('states') | map('float', 0) | list %}
+          {{ (werte | sum) | round(2) }}
+        attributes:
+          jahr: >-
+            {% set invalid = ['unknown','unavailable','none','None',''] %}
+            {{ (states('input_number.abrechnungsjahr')
+                if states('input_number.abrechnungsjahr') not in invalid else now().year) | int }}
+
+      - name: whg03_betriebskosten_summe_eur
+        unique_id: whg03_betriebskosten_summe_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set invalid = ['unknown','unavailable','none','None',''] %}
+          {% set y = (states('input_number.abrechnungsjahr')
+                      if states('input_number.abrechnungsjahr') not in invalid else now().year) | int %}
+          {% set p = 'sensor.whg03_' %}
+          {% set ids = [
+            p ~ 'strom_variabel_anteil_eur_' ~ y,
+            p ~ 'strom_grundpreis_anteil_eur_' ~ y,
+            p ~ 'wasser_anteil_eur_' ~ y,
+            p ~ 'abwasser_anteil_eur_' ~ y,
+            p ~ 'grundsteuer_anteil_eur_' ~ y,
+            p ~ 'versicherung_anteil_eur_' ~ y,
+            p ~ 'muell_anteil_eur_' ~ y,
+            p ~ 'niederschlagswasser_anteil_eur_' ~ y,
+            p ~ 'wartung_heizung_anteil_eur_' ~ y,
+            p ~ 'abrechnungsservice_anteil_eur_' ~ y
+          ] %}
+          {% set werte = ids | map('states') | map('float', 0) | list %}
+          {{ (werte | sum) | round(2) }}
+        attributes:
+          jahr: >-
+            {% set invalid = ['unknown','unavailable','none','None',''] %}
+            {{ (states('input_number.abrechnungsjahr')
+                if states('input_number.abrechnungsjahr') not in invalid else now().year) | int }}
+
+      - name: whg04_betriebskosten_summe_eur
+        unique_id: whg04_betriebskosten_summe_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set invalid = ['unknown','unavailable','none','None',''] %}
+          {% set y = (states('input_number.abrechnungsjahr')
+                      if states('input_number.abrechnungsjahr') not in invalid else now().year) | int %}
+          {% set p = 'sensor.whg04_' %}
+          {% set ids = [
+            p ~ 'strom_variabel_anteil_eur_' ~ y,
+            p ~ 'strom_grundpreis_anteil_eur_' ~ y,
+            p ~ 'wasser_anteil_eur_' ~ y,
+            p ~ 'abwasser_anteil_eur_' ~ y,
+            p ~ 'grundsteuer_anteil_eur_' ~ y,
+            p ~ 'versicherung_anteil_eur_' ~ y,
+            p ~ 'muell_anteil_eur_' ~ y,
+            p ~ 'niederschlagswasser_anteil_eur_' ~ y,
+            p ~ 'wartung_heizung_anteil_eur_' ~ y,
+            p ~ 'abrechnungsservice_anteil_eur_' ~ y
+          ] %}
+          {% set werte = ids | map('states') | map('float', 0) | list %}
+          {{ (werte | sum) | round(2) }}
+        attributes:
+          jahr: >-
+            {% set invalid = ['unknown','unavailable','none','None',''] %}
+            {{ (states('input_number.abrechnungsjahr')
+                if states('input_number.abrechnungsjahr') not in invalid else now().year) | int }}
