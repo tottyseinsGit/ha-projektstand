@@ -4,7 +4,7 @@
 utility_meter:
   haus_strom_wp_kwh_year:
     name: "Haus – WP Strom: Jahr"
-    source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh   # ← Quelle bei dir prüfen
+    source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh   # ← Quelle bei dir vorhanden
     cycle: yearly
 
 input_number:
@@ -28,7 +28,7 @@ template:
              or states('input_number.haus_strom_wp_vormontage_kwh') not in ['unknown','unavailable',''] }}
         state: >
           {{ ( states('sensor.haus_strom_wp_kwh_year')|float(0)
-             + states('input_number.haus_strom_wp_vormontage_kwh')|float(0) ) | round(1) }}
+               + states('input_number.haus_strom_wp_vormontage_kwh')|float(0) ) | round(1) }}
         attributes:
           utm_entity: sensor.haus_strom_wp_kwh_year
           vormontage_kwh: "{{ states('input_number.haus_strom_wp_vormontage_kwh') }}"

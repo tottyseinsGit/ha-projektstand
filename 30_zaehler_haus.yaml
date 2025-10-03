@@ -9,7 +9,7 @@ utility_meter:
 
   haus_wasser_m3_year:
     name: "Haus – Wasser: Jahr"
-    source: sensor.water_total_m3        # TODO: Quelle bestätigen
+    source: sensor.water_total_m3            # TODO: gegen die reale Entity tauschen
     cycle: yearly
 
   haus_heizung_kwh_year:
@@ -51,12 +51,11 @@ template:
         state_class: total
         unit_of_measurement: "kWh"
         availability: >
-          {{ states('sensor.haus_strom_kwh_year') not in ['unknown','unavailable',''] 
+          {{ states('sensor.haus_strom_kwh_year') not in ['unknown','unavailable','']
              or states('input_number.haus_strom_kwh_manual') not in ['unknown','unavailable',''] }}
         state: >
           {% set m = states('sensor.haus_strom_kwh_year') %}
-          {{ (m if m not in ['unknown','unavailable',''] 
-                else states('input_number.haus_strom_kwh_manual')) | float(0) }}
+          {{ (m if m not in ['unknown','unavailable',''] else states('input_number.haus_strom_kwh_manual')) | float(0) }}
 
       - name: haus_wasser_m3_jahr
         unique_id: haus_wasser_m3_jahr
@@ -64,22 +63,20 @@ template:
         state_class: total
         unit_of_measurement: "m³"
         availability: >
-          {{ states('sensor.haus_wasser_m3_year') not in ['unknown','unavailable',''] 
+          {{ states('sensor.haus_wasser_m3_year') not in ['unknown','unavailable','']
              or states('input_number.haus_wasser_m3_manual') not in ['unknown','unavailable',''] }}
         state: >
           {% set m = states('sensor.haus_wasser_m3_year') %}
-          {{ (m if m not in ['unknown','unavailable',''] 
-                else states('input_number.haus_wasser_m3_manual')) | float(0) }}
+          {{ (m if m not in ['unknown','unavailable',''] else states('input_number.haus_wasser_m3_manual')) | float(0) }}
 
-      - name: haus_heizung_kwh_jahr         # <— vereinheitlicht (vorher: heizenergie)
+      - name: haus_heizung_kwh_jahr
         unique_id: haus_heizung_kwh_jahr
         device_class: energy
         state_class: total
         unit_of_measurement: "kWh"
         availability: >
-          {{ states('sensor.haus_heizung_kwh_year') not in ['unknown','unavailable',''] 
+          {{ states('sensor.haus_heizung_kwh_year') not in ['unknown','unavailable','']
              or states('input_number.haus_heizung_kwh_manual') not in ['unknown','unavailable',''] }}
         state: >
           {% set m = states('sensor.haus_heizung_kwh_year') %}
-          {{ (m if m not in ['unknown','unavailable',''] 
-                else states('input_number.haus_heizung_kwh_manual')) | float(0) }}
+          {{ (m if m not in ['unknown','unavailable',''] else states('input_number.haus_heizung_kwh_manual')) | float(0) }}

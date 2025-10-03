@@ -9,7 +9,7 @@ input_text:
     name: "WHG01 – Wasser kalt: Meter-ID"
     max: 32
   whg01_wasser_kalt_meter_key:
-    name: "WHG01 – Wasser kalt: Meter-Key (HEX)"
+    name: "WHG01 – Wasser kalt: Meter-Key"          # <— ohne „HEX“
     max: 64
   whg01_wasser_kalt_hersteller:
     name: "WHG01 – Wasser kalt: Hersteller/Typ"
@@ -22,7 +22,7 @@ input_text:
     name: "WHG01 – Wasser warm: Meter-ID"
     max: 32
   whg01_wasser_warm_meter_key:
-    name: "WHG01 – Wasser warm: Meter-Key (HEX)"
+    name: "WHG01 – Wasser warm: Meter-Key"          # <— ohne „HEX“
     max: 64
   whg01_wasser_warm_hersteller:
     name: "WHG01 – Wasser warm: Hersteller/Typ"
@@ -35,7 +35,7 @@ input_text:
     name: "WHG01 – WMZ: Meter-ID"
     max: 32
   whg01_wmz_meter_key:
-    name: "WHG01 – WMZ: Meter-Key (HEX)"
+    name: "WHG01 – WMZ: Meter-Key"                  # <— ohne „HEX“
     max: 64
   whg01_wmz_hersteller:
     name: "WHG01 – WMZ: Hersteller/Typ"
@@ -48,7 +48,7 @@ input_text:
     name: "WHG01 – Strom: Zählernummer/ID"
     max: 32
   whg01_strom_meter_key:
-    name: "WHG01 – Strom: Schlüssel (optional)"
+    name: "WHG01 – Strom: Schlüssel (optional)"     # konsistent ohne HEX
     max: 64
   whg01_strom_hersteller:
     name: "WHG01 – Strom: Hersteller/Typ"
@@ -106,7 +106,7 @@ input_datetime:
     has_time: false
 
 # ───────────────────────────────────────────────────────────────────────────────
-# Ablauf der Eichfristen (Timestamp jetzt mit Uhrzeit)
+# Ablauf der Eichfristen (Timestamp inkl. lokaler Zeit)
 # ───────────────────────────────────────────────────────────────────────────────
 template:
   - sensor:
@@ -186,7 +186,7 @@ template:
         unique_id: whg01_wasser_modell
         state: "WaterStar M"
 
-      # Funkmodus (aus deiner Add-on-Konfig → C1)
+      # Funkmodus (aus Add-on-Konfig → C1)
       - name: "whg01_wasser_funkmodus"
         unique_id: whg01_wasser_funkmodus
         state: "C1"
