@@ -1,184 +1,48 @@
-# /config/packages/42_abrechnung_whg01_bridge.yaml
-# WHG01 – Kern-Entities (jahrunabhängig) + Jahres-Aliasse (2025)
-# Achtung: pro Top-Level-Schlüssel nur EIN Block.
-
-mqtt:
-  sensor:
-    # KALTWASSER (läuft)
-    - name: "whg01_wasserzaehler_total_m3_kalt"
-      unique_id: whg01_wasserzaehler_total_m3_kalt
-      state_topic: "wmbusmeters/Wasserzaehler_Whg01"
-      value_template: "{{ value_json.total_m3 | float(0) }}"
-      unit_of_measurement: "m³"
-      device_class: water
-      state_class: total_increasing
-      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01"
-
-    # WARMWASSER (noch nicht montiert; Topic ggf. anpassen)
-    - name: "whg01_wasserzaehler_total_m3_warm"
-      unique_id: whg01_wasserzaehler_total_m3_warm
-      state_topic: "wmbusmeters/Wasserzaehler_Whg01_Warm"
-      value_template: "{{ value_json.total_m3 | float(0) }}"
-      unit_of_measurement: "m³"
-      device_class: water
-      state_class: total_increasing
-      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01_Warm"
-
-    # WMZ (Sensostar – Topic ggf. anpassen)
-    - name: "whg01_wmz_total_kwh"
-      unique_id: whg01_wmz_total_kwh
-      state_topic: "wmbusmeters/sensostar_wmz_94857143"
-      value_template: "{{ value_json.total_kwh | float(0) }}"
-      unit_of_measurement: "kWh"
-      device_class: energy
-      state_class: total_increasing
-      json_attributes_topic: "wmbusmeters/sensostar_wmz_94857143"
-
-utility_meter:
-  # Jahr-UTILITY (immer aktuelles Jahr)
-  whg01_wasser_kalt_m3_year:
-    name: "WHG01 Wasser kalt – Jahr"
-    source: sensor.whg01_wasserzaehler_total_m3_kalt
-    cycle: yearly
-
-  whg01_wasser_warm_m3_year:
-    name: "WHG01 Wasser warm – Jahr"
-    source: sensor.whg01_wasserzaehler_total_m3_warm
-    cycle: yearly
-
-  whg01_wmz_kwh_year:
-    name: "WHG01 WMZ – Jahr"
-    source: sensor.whg01_wmz_total_kwh
-    cycle: yearly
-
-  # WP/Strom – EXISTIERENDE Entity als Quelle eintragen!
-  whg01_strom_wp_kwh_year:
-    name: "WHG01 Strom/WP – Jahr"
-    source: sensor.whg01_wp_total_kwh   # <-- ggf. anpassen
-    cycle: yearly
+# WHG01 – Abrechnungs-Bridge (nur Vormontage + Gesamtstände, kollisionsfrei)
 
 input_number:
-  # Vormontage (immer „aktuelles Jahr“ — ab Folgejahr = 0)
   whg01_wasser_kalt_vormontage_m3:
-    name: "WHG01 Wasser kalt – Vormontage [m³]"
+    name: "WHG01 Wasser KALT Vormontage [m³]"
     min: 0
     max: 100000
     step: 0.001
     mode: box
     unit_of_measurement: "m³"
+    icon: mdi:water
+    initial: 0
 
   whg01_wasser_warm_vormontage_m3:
-    name: "WHG01 Wasser warm – Vormontage [m³]"
+    name: "WHG01 Wasser WARM Vormontage [m³]"
     min: 0
     max: 100000
     step: 0.001
     mode: box
     unit_of_measurement: "m³"
-
-  whg01_wmz_vormontage_kwh:
-    name: "WHG01 WMZ – Vormontage [kWh]"
-    min: 0
-    max: 100000
-    step: 0.1
-    mode: box
-    unit_of_measurement: "kWh"
-
-  whg01_strom_wp_vormontage_kwh:
-    name: "WHG01 Strom/WP – Vormontage [kWh]"
-    min: 0
-    max: 100000
-    step: 0.1
-    mode: box
-    unit_of_measurement: "kWh"
-
-  # Grundpreis-Anteil (falls je Wohnung fix verteilt werden soll)
-  whg01_strom_grundpreis_anteil_eur:
-    name: "WHG01 Strom – Grundpreis-Anteil [€]"
-    min: 0
-    max: 100000
-    step: 0.01
-    mode: box
-    unit_of_measurement: "€"
+    icon: mdi:water-thermometer
+    initial: 0
 
 template:
   - sensor:
-      # ── KERN (jahrunabhängig): Kaltwasser ────────────────────────────────
+      # ---------- KALT: Gesamt = Vormontage + laufender Zähler ----------
       - name: "whg01_wasser_kalt_m3_gesamt"
         unique_id: whg01_wasser_kalt_m3_gesamt
         unit_of_measurement: "m³"
-        state: >
-          {{ ( states('sensor.whg01_wasser_kalt_m3_year')|float(0)
-             + states('input_number.whg01_wasser_kalt_vormontage_m3')|float(0) ) | round(3) }}
+        device_class: volume
+        state_class: total_increasing
+        icon: mdi:water
+        state: >-
+          {% set base  = states('input_number.whg01_wasser_kalt_vormontage_m3') | replace(',', '.') | float(0) %}
+          {% set total = states('sensor.whg01_wasserzaehler_total_m3_kalt')     | replace(',', '.') | float(0) %}
+          {{ (base + total) | round(3) }}
 
-      # ── KERN: Warmwasser ────────────────────────────────────────────────
+      # ---------- WARM: Gesamt = Vormontage + laufender Zähler ----------
       - name: "whg01_wasser_warm_m3_gesamt"
         unique_id: whg01_wasser_warm_m3_gesamt
         unit_of_measurement: "m³"
-        state: >
-          {{ ( states('sensor.whg01_wasser_warm_m3_year')|float(0)
-             + states('input_number.whg01_wasser_warm_vormontage_m3')|float(0) ) | round(3) }}
-
-      # ── KERN: WMZ (kWh) ────────────────────────────────────────────────
-      - name: "whg01_wmz_kwh_gesamt"
-        unique_id: whg01_wmz_kwh_gesamt
-        unit_of_measurement: "kWh"
-        state: >
-          {{ ( states('sensor.whg01_wmz_kwh_year')|float(0)
-             + states('input_number.whg01_wmz_vormontage_kwh')|float(0) ) | round(1) }}
-
-      # ── KERN: Strom/WP (kWh) ───────────────────────────────────────────
-      - name: "whg01_strom_wp_kwh_gesamt"
-        unique_id: whg01_strom_wp_kwh_gesamt
-        unit_of_measurement: "kWh"
-        state: >
-          {{ ( states('sensor.whg01_strom_wp_kwh_year')|float(0)
-             + states('input_number.whg01_strom_wp_vormontage_kwh')|float(0) ) | round(1) }}
-
-      # ── JAHRES-ALIASSE 2025 (zeigen intern auf die Kernwerte) ───────────
-      - name: "whg01_wasser_anteil_eur_2025"
-        unique_id: whg01_wasser_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ ( states('sensor.whg01_wasser_kalt_m3_gesamt')|float(0)
-             * states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')|float(0) ) | round(2) }}
-
-      - name: "whg01_abwasser_anteil_eur_2025"
-        unique_id: whg01_abwasser_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ ( states('sensor.whg01_wasser_kalt_m3_gesamt')|float(0)
-             * states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')|float(0) ) | round(2) }}
-
-      - name: "whg01_wasser_warm_anteil_eur_2025"
-        unique_id: whg01_wasser_warm_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ ( states('sensor.whg01_wasser_warm_m3_gesamt')|float(0)
-             * states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3')|float(0) ) | round(2) }}
-
-      - name: "whg01_abwasser_warm_anteil_eur_2025"
-        unique_id: whg01_abwasser_warm_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ ( states('sensor.whg01_wasser_warm_m3_gesamt')|float(0)
-             * states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3')|float(0) ) | round(2) }}
-
-      - name: "whg01_wmz_anteil_eur_2025"
-        unique_id: whg01_wmz_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ ( states('sensor.whg01_wmz_kwh_gesamt')|float(0)
-             * states('input_number.haus_kosten_waermemenge_arbeitspreis_eur_kwh')|float(0) ) | round(2) }}
-
-      - name: "whg01_strom_variabel_anteil_eur_2025"
-        unique_id: whg01_strom_variabel_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ ( states('sensor.whg01_strom_wp_kwh_gesamt')|float(0)
-             * states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh')|float(0) ) | round(2) }}
-
-      - name: "whg01_strom_grundpreis_anteil_eur_2025"
-        unique_id: whg01_strom_grundpreis_anteil_eur_2025
-        unit_of_measurement: "€"
-        state: >
-          {{ states('input_number.whg01_strom_grundpreis_anteil_eur')|float(0) | round(2) }}
+        device_class: volume
+        state_class: total_increasing
+        icon: mdi:water-thermometer
+        state: >-
+          {% set base  = states('input_number.whg01_wasser_warm_vormontage_m3') | replace(',', '.') | float(0) %}
+          {% set total = states('sensor.whg01_wasserzaehler_total_m3_warm')     | replace(',', '.') | float(0) %}
+          {{ (base + total) | round(3) }}

@@ -1,0 +1,187 @@
+# /config/packages/43_abrechnung_alias.yaml
+# Alias-Sensoren ohne Jahres-Suffix → mappen dynamisch auf ..._<jahr>
+# Steuerung über input_number.abrechnungsjahr (Fallback: aktuelles Jahr)
+# Nach dem Speichern: Entwicklerwerkzeuge → YAML → "Vorlagen-Entitäten neu laden"
+
+template:
+  - sensor:
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: whg01_wasser_anteil_eur
+        unique_id: whg01_wasser_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:water
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_wasser_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_wasser_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Wasser – Anteil ({{ y }})
+
+      - name: whg01_abwasser_anteil_eur
+        unique_id: whg01_abwasser_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:water-sync
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_abwasser_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_abwasser_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Abwasser – Anteil ({{ y }})
+
+      - name: whg01_strom_variabel_anteil_eur
+        unique_id: whg01_strom_variabel_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:flash
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_strom_variabel_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_strom_variabel_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Strom – variabler Anteil ({{ y }})
+
+      - name: whg01_strom_grundpreis_anteil_eur
+        unique_id: whg01_strom_grundpreis_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:transmission-tower
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_strom_grundpreis_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_strom_grundpreis_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Strom – Grundpreis ({{ y }})
+
+      - name: whg01_grundsteuer_anteil_eur
+        unique_id: whg01_grundsteuer_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:home-city
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_grundsteuer_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_grundsteuer_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Grundsteuer – Anteil ({{ y }})
+
+      - name: whg01_versicherung_anteil_eur
+        unique_id: whg01_versicherung_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:shield-home
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_versicherung_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_versicherung_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Gebäudeversicherung – Anteil ({{ y }})
+
+      - name: whg01_muell_anteil_eur
+        unique_id: whg01_muell_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:trash-can
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_muell_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_muell_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Müllabfuhr – Anteil ({{ y }})
+
+      - name: whg01_niederschlagswasser_anteil_eur
+        unique_id: whg01_niederschlagswasser_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:weather-pouring
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_niederschlagswasser_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_niederschlagswasser_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Niederschlagswasser – Anteil ({{ y }})
+
+      - name: whg01_wartung_heizung_anteil_eur
+        unique_id: whg01_wartung_heizung_anteil_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:wrench-cog
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_wartung_heizung_anteil_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_wartung_heizung_anteil_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Wartung Heizung – Anteil ({{ y }})
+
+      - name: whg01_betriebskosten_summe_eur
+        unique_id: whg01_betriebskosten_summe_eur_alias
+        unit_of_measurement: "€"
+        icon: mdi:sum
+        state: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_betriebskosten_summe_eur_' ~ y) | float(0) }}
+        availability: >-
+          {% set jh = states('input_number.abrechnungsjahr') %}
+          {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+          {{ states('sensor.whg01_betriebskosten_summe_eur_' ~ y) not in ['unknown','unavailable',''] }}
+        attributes:
+          friendly_name: >-
+            {% set jh = states('input_number.abrechnungsjahr') %}
+            {% set y  = (jh | int(0)) if jh not in ['unknown','unavailable','', '0'] else now().year %}
+            WHG01 Betriebskosten – Summe ({{ y }})
