@@ -1,6 +1,6 @@
 # /config/packages/wasser_whg01.yaml
 # WHG01 Wasser (kalt/warm): MQTT-Quelle + Utility-Meter (Tag/Monat/Jahr)
-# WICHTIG: pro Utility-Meter GENAU EIN "source:"
+# WICHTIG: pro Utility-Meter GENAU EIN "source:".
 
 mqtt:
   sensor:
@@ -21,7 +21,7 @@ mqtt:
           {{ states('sensor.whg01_wasserzaehler_total_m3_kalt') }}
         {% endif %}
       unit_of_measurement: "m³"
-      device_class: water
+      device_class: volume
       state_class: total_increasing
 
     # =======================
@@ -41,7 +41,7 @@ mqtt:
           {{ states('sensor.whg01_wasserzaehler_total_m3_warm') }}
         {% endif %}
       unit_of_measurement: "m³"
-      device_class: water
+      device_class: volume
       state_class: total_increasing
 
 utility_meter:
