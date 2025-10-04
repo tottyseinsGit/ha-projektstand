@@ -1,5 +1,32 @@
+# /config/packages/99_bk_export.yaml
+# Export der Betriebskosten-PDF + Button + Benachrichtigung (jahresabhängig)
+# Erwartet optional: input_number.abrechnungsjahr
+# Fallback, falls nicht vorhanden/ungültig: aktuelles Jahr (now().year)
+
 rest_command:
-  bk_export_pdf:
-    url: "http://192.168.178.5:5000/export?jahr={{ states('input_number.abrechnung_jahr')|int }}"
+  export_betriebskosten_pdf:
+    url: "http://192.168.178.5:5000/export?jahr={{ (states('input_number.abrechnungsjahr')|int if states('input_number.abrechnungsjahr') not in ['unknown','unavailable',''] else now().year) }}"
     method: GET
-    timeout: 120
+    timeout: 60
+
+script:
+  export_betriebskosten_pdf_now:
+    alias: "Export Betriebskosten PDF jetzt"
+    mode: single
+    sequence:
+      - variables:
+          jahr: "{{ states('input_number.abrechnungsjahr')|int if states('input_number.abrechnungsjahr') not in ['unknown','unavailable',''] else now().year }}"
+      - service: rest_command.export_betriebskosten_pdf
+      - delay: "00:00:02"
+      - service: persistent_notification.create
+        data:
+          title: "Betriebskosten-Export {{ jahr }}"
+          message: "Fertig. Öffnen: http://192.168.178.60:8123/local/exports/bk_{{ jahr }}_latest.pdf"
+
+template:
+  - button:
+      - name: "Export Betriebskosten PDF"
+        unique_id: export_betriebskosten_pdf_button
+        icon: mdi:file-pdf-box
+        press:
+          - service: script.export_betriebskosten_pdf_now
