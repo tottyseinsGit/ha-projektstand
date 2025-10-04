@@ -21,7 +21,7 @@ mqtt:
           {{ states('sensor.whg01_wasserzaehler_total_m3_kalt') }}
         {% endif %}
       unit_of_measurement: "m³"
-      device_class: water
+      device_class: volume
       state_class: total_increasing
 
     # =======================
@@ -41,11 +41,11 @@ mqtt:
           {{ states('sensor.whg01_wasserzaehler_total_m3_warm') }}
         {% endif %}
       unit_of_measurement: "m³"
-      device_class: water
+      device_class: volume
       state_class: total_increasing
 
 utility_meter:
-  # KALT
+  # ===== KALT =====
   whg01_wasser_kalt_m3_today:
     source: sensor.whg01_wasserzaehler_total_m3_kalt
     cycle: daily
@@ -56,7 +56,7 @@ utility_meter:
     source: sensor.whg01_wasserzaehler_total_m3_kalt
     cycle: yearly
 
-  # WARM
+  # ===== WARM =====
   whg01_wasser_warm_m3_today:
     source: sensor.whg01_wasserzaehler_total_m3_warm
     cycle: daily
