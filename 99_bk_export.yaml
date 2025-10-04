@@ -93,3 +93,9 @@ template:
         icon: mdi:file-pdf-box
         press:
           - service: script.export_betriebskosten_pdf_now
+rest_command:
+   export_betriebskosten_pdf:
+    method: GET
+    Betriebskostenabrechnung 2025
+Erstellt am 2025-10-04 20:43:34
+(Test-PDF vom Export-Server – Verbindung ok.)
