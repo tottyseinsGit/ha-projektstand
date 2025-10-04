@@ -1,12 +1,6 @@
 # /config/packages/wasser_whg01.yaml
-# WHG01 Wasser (kalt/warm): MQTT-Quelle + Utility-Meter (Tag/Monat/Jahr)
-# WICHTIG: pro Utility-Meter GENAU EIN "source:"
-
 mqtt:
   sensor:
-    # =======================
-    # WHG01 – KALT (Gesamt)
-    # =======================
     - object_id: whg01_wasserzaehler_total_m3_kalt
       unique_id: whg01_wasserzaehler_total_m3_kalt
       name: "Whg 01 – Wasser KALT: Gesamt [m³]"
@@ -24,9 +18,6 @@ mqtt:
       device_class: water
       state_class: total_increasing
 
-    # =======================
-    # WHG01 – WARM (Gesamt)
-    # =======================
     - object_id: whg01_wasserzaehler_total_m3_warm
       unique_id: whg01_wasserzaehler_total_m3_warm
       name: "Whg 01 – Wasser WARM: Gesamt [m³]"
@@ -43,26 +34,3 @@ mqtt:
       unit_of_measurement: "m³"
       device_class: water
       state_class: total_increasing
-
-utility_meter:
-  # ===== KALT =====
-  whg01_wasser_kalt_m3_today:
-    source: sensor.whg01_wasserzaehler_total_m3_kalt
-    cycle: daily
-  whg01_wasser_kalt_m3_month:
-    source: sensor.whg01_wasserzaehler_total_m3_kalt
-    cycle: monthly
-  whg01_wasser_kalt_m3_year:
-    source: sensor.whg01_wasserzaehler_total_m3_kalt
-    cycle: yearly
-
-  # ===== WARM =====
-  whg01_wasser_warm_m3_today:
-    source: sensor.whg01_wasserzaehler_total_m3_warm
-    cycle: daily
-  whg01_wasser_warm_m3_month:
-    source: sensor.whg01_wasserzaehler_total_m3_warm
-    cycle: monthly
-  whg01_wasser_warm_m3_year:
-    source: sensor.whg01_wasserzaehler_total_m3_warm
-    cycle: yearly

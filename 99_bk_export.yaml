@@ -1,11 +1,20 @@
 # /config/packages/99_bk_export.yaml
-# Export der Betriebskosten-PDF + Button + Benachrichtigung (jahresabhängig)
-# Erwartet optional: input_number.abrechnungsjahr
-# Fallback, falls nicht vorhanden/ungültig: aktuelles Jahr (now().year)
+# Export der Betriebskosten-PDF + Benachrichtigung mit Link
+# - Button: button.export_betriebskosten_pdf_button
+# - Script: script.export_betriebskosten_pdf_now
+# - REST:   rest_command.export_betriebskosten_pdf
+# Hinweis: input_number.abrechnungsjahr wird NICHT hier definiert, um Duplikate zu vermeiden.
+#          Falls er nicht existiert, fällt die Logik auf now().year zurück.
 
 rest_command:
   export_betriebskosten_pdf:
-    url: "http://192.168.178.5:5000/export?jahr={{ (states('input_number.abrechnungsjahr')|int if states('input_number.abrechnungsjahr') not in ['unknown','unavailable',''] else now().year) }}"
+    url: >-
+      http://192.168.178.5:5000/export
+      ?jahr={{
+        (states('input_number.abrechnungsjahr') | int
+         if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','']
+         else now().year)
+      }}
     method: GET
     timeout: 60
 
@@ -15,13 +24,17 @@ script:
     mode: single
     sequence:
       - variables:
-          jahr: "{{ states('input_number.abrechnungsjahr')|int if states('input_number.abrechnungsjahr') not in ['unknown','unavailable',''] else now().year }}"
+          jahr: >-
+            {% set j = states('input_number.abrechnungsjahr') %}
+            {{ j | int if j not in ['unknown','unavailable',''] else now().year }}
       - service: rest_command.export_betriebskosten_pdf
       - delay: "00:00:02"
       - service: persistent_notification.create
         data:
           title: "Betriebskosten-Export {{ jahr }}"
-          message: "Fertig. Öffnen: http://192.168.178.60:8123/local/exports/bk_{{ jahr }}_latest.pdf"
+          message: >-
+            Fertig. Öffnen:
+            http://192.168.178.60:8123/local/exports/bk_{{ jahr }}_latest.pdf
 
 template:
   - button:
