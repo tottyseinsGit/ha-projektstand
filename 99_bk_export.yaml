@@ -1,15 +1,13 @@
-# Betriebskosten-Export WHG01 – jahresneutral über input_number.abrechnungsjahr
-# Fix: Direktlink mit Cache-Busting (v=<timestamp>) in der Benachrichtigung.
+# /config/packages/99_bk_export.yaml
+# Betriebskosten-Export WHG01 (GET) – Server erlaubt nur GET.
+# Schickt alle Kosten-/Hilfsfelder mit, Jahr aus input_number.abrechnungsjahr.
+# Script zeigt danach einen ABSOLUTEN Link zur PDF (http://192.168.178.60:8123/local/exports/bk_<Jahr>_latest.pdf).
 
 rest_command:
   export_betriebskosten_pdf:
+    method: GET
+    timeout: 30
     url: >-
-      {% set inv = ['unknown','unavailable','none','None',''] %}
-      {% set y = (states('input_number.abrechnungsjahr') if states('input_number.abrechnungsjahr') not in inv else now().year) | int %}
-      http://192.168.178.5:5000/export?whg=whg01&jahr={{ y }}&abrechnungsjahr={{ y }}
-    method: POST
-    content_type: "application/x-www-form-urlencoded"
-    payload: >-
       {% set inv = ['unknown','unavailable','none','None',''] %}
       {% set y   = (states('input_number.abrechnungsjahr') if states('input_number.abrechnungsjahr') not in inv else now().year) | int %}
       {% set sel = states('input_select.haus_verteilerschluessel') %}
@@ -40,34 +38,8 @@ rest_command:
       {% set niedersch_eur = (nw * share) | round(2) %}
       {% set wartung_eur   = (hz_w * share) | round(2) %}
       {% set abrech_eur    = (abr_s * share) | round(2) %}
-      abrechnungsjahr={{ y }}&
-      jahr={{ y }}&
-      created_at={{ now().isoformat() }}&
-      verteilerschluessel={{ sel | urlencode }}&
-      share={{ ('%.6f' % share) | urlencode }}&
-      wasser_kalt_m3_gesamt={{ k_m3 | round(3) }}&
-      wasser_warm_m3_gesamt={{ w_m3 | round(3) }}&
-      strom_kwh_gesamt={{ kwh | round(3) }}&
-      kosten_wasser_eur_m3={{ p_w }}&
-      kosten_abwasser_eur_m3={{ p_a }}&
-      kosten_strom_eur_kwh={{ p_st }}&
-      strom_grundpreis_whg_eur={{ gp_st }}&
-      haus_grundsteuer_eur={{ gr }}&
-      haus_versicherung_eur={{ vs }}&
-      haus_muell_eur={{ mu }}&
-      haus_niederschlagswasser_eur={{ nw }}&
-      haus_wartung_heizung_eur={{ hz_w }}&
-      haus_abrechnungsservice_eur={{ abr_s }}&
-      whg01_strom_variabel_anteil_eur={{ strom_var_eur }}&
-      whg01_strom_grundpreis_anteil_eur={{ gp_st | round(2) }}&
-      whg01_wasser_anteil_eur={{ wasser_eur }}&
-      whg01_abwasser_anteil_eur={{ abwasser_eur }}&
-      whg01_grundsteuer_anteil_eur={{ grundst_eur }}&
-      whg01_versicherung_anteil_eur={{ versich_eur }}&
-      whg01_muell_anteil_eur={{ muell_eur }}&
-      whg01_niederschlagswasser_anteil_eur={{ niedersch_eur }}&
-      whg01_wartung_heizung_anteil_eur={{ wartung_eur }}&
-      whg01_abrechnungsservice_anteil_eur={{ abrech_eur }}
+      {% set summe_eur     = (strom_var_eur + (gp_st | round(2)) + wasser_eur + abwasser_eur + grundst_eur + versich_eur + muell_eur + niedersch_eur + wartung_eur + abrech_eur) | round(2) %}
+      http://192.168.178.5:5000/export?wohnung=WHG01&abrechnungsjahr={{ y }}&created_at={{ now().strftime('%Y-%m-%dT%H:%M:%S%z') | urlencode }}&verteilerschluessel={{ sel | urlencode }}&share={{ ('%.6f' % share) | urlencode }}&wasser_kalt_m3_gesamt={{ k_m3 | round(3) }}&wasser_warm_m3_gesamt={{ w_m3 | round(3) }}&strom_kwh_gesamt={{ kwh | round(3) }}&kosten_wasser_eur_m3={{ p_w }}&kosten_abwasser_eur_m3={{ p_a }}&kosten_strom_eur_kwh={{ p_st }}&strom_grundpreis_whg_eur={{ gp_st }}&haus_grundsteuer_eur={{ gr }}&haus_versicherung_eur={{ vs }}&haus_muell_eur={{ mu }}&haus_niederschlagswasser_eur={{ nw }}&haus_wartung_heizung_eur={{ hz_w }}&haus_abrechnungsservice_eur={{ abr_s }}&whg01_strom_variabel_anteil_eur={{ strom_var_eur }}&whg01_strom_grundpreis_anteil_eur={{ gp_st | round(2) }}&whg01_wasser_anteil_eur={{ wasser_eur }}&whg01_abwasser_anteil_eur={{ abwasser_eur }}&whg01_grundsteuer_anteil_eur={{ grundst_eur }}&whg01_versicherung_anteil_eur={{ versich_eur }}&whg01_muell_anteil_eur={{ muell_eur }}&whg01_niederschlagswasser_anteil_eur={{ niedersch_eur }}&whg01_wartung_heizung_anteil_eur={{ wartung_eur }}&whg01_abrechnungsservice_anteil_eur={{ abrech_eur }}&summe_eur={{ summe_eur }}&v={{ now().timestamp() | int }}
 
 script:
   export_betriebskosten_pdf_now:
@@ -77,13 +49,15 @@ script:
       - variables:
           y: "{{ (states('input_number.abrechnungsjahr') | int(default=now().year)) }}"
           t: "{{ now().timestamp() | int }}"
+          base: "http://192.168.178.60:8123"   # <- HIER ggf. auf deine HA-URL ändern
       - service: rest_command.export_betriebskosten_pdf
+      - delay: "00:00:01"
       - service: persistent_notification.create
         data:
           title: "Betriebskosten-Export {{ y }}"
           message: >-
             Fertig. Öffnen:
-            http://192.168.178.60:8123/local/exports/bk_{{ y }}_latest.pdf?v={{ t }}
+            [bk_{{ y }}_latest.pdf]({{ base }}/local/exports/bk_{{ y }}_latest.pdf?v={{ t }})
           notification_id: "bk_pdf_export"
 
 template:
@@ -93,9 +67,3 @@ template:
         icon: mdi:file-pdf-box
         press:
           - service: script.export_betriebskosten_pdf_now
-rest_command:
-   export_betriebskosten_pdf:
-    method: GET
-    Betriebskostenabrechnung 2025
-Erstellt am 2025-10-04 20:43:34
-(Test-PDF vom Export-Server – Verbindung ok.)
