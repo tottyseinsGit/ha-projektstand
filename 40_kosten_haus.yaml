@@ -3,10 +3,10 @@
 # - Quelle: sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh
 # - Utility-Meter: Stunde/Tag/Monat/Jahr
 # - Kosten variabel (EPEX), Fallback auf Durchschnittspreis
-# - Nachtrag 1.1. → Go-Live (tagebasiert) + Startwert-Methode
+# - Nachtrag 1.1. → Go-Live (tagebasiert) + Startwert-Methode (aus deiner Datei)
+# - NEU: Option A3 (manuelle Vor-Montage) + aufsummierte € (Total + Utility-Meter)
 # - Preise: dynamisch über input_number.abrechnungsjahr (falls vorhanden)
-#           versucht zuerst jahresspezifische Helper mit Suffix _<jahr>,
-#           fällt sonst auf neutrale Helper zurück.
+#   versucht zuerst jahresspezifische Helper mit Suffix _<jahr>, fällt sonst auf neutral zurück.
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Inputs (neutral)
@@ -18,7 +18,7 @@ input_datetime:
     has_time: false
 
 input_number:
-  # Durchschnittspreis (neutral). Optional zusätzlich: _<jahr> (z. B. …_2025)
+  # Durchschnittspreis (neutral). Optional zusätzlich: _<Jahr> (z. B. …_2025)
   haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh:
     name: "Haus – Kosten: Strom Arbeitspreis [€/kWh]"
     min: 0
@@ -27,7 +27,7 @@ input_number:
     mode: box
     unit_of_measurement: "€/kWh"
 
-  # Pauschaler kWh/Tag für Nachtrag 1.1. → Go-Live
+  # Pauschaler kWh/Tag für Nachtrag 1.1. → Go-Live (dein bisheriger Weg)
   haus_allgemeinstrom_baseline_kwh_pro_tag:
     name: "Haus – Kosten: Strom kWh/Tag (Schätzung)"
     min: 0
@@ -36,8 +36,31 @@ input_number:
     mode: box
     unit_of_measurement: "kWh/Tag"
 
+  # ── NEU: Option A3 (manuell) – kWh und Ø-Preis vor Montage
+  haus_allgemeinstrom_vormontage_kwh:
+    name: "Allgemeinstrom vor Montage (kWh)"
+    min: 0
+    max: 999999
+    step: 0.001
+    mode: box
+    unit_of_measurement: "kWh"
+
+  haus_allgemeinstrom_vormontage_preis_eur_kwh:
+    name: "Ø-Preis vor Montage (€/kWh)"
+    min: 0
+    max: 5
+    step: 0.0001
+    mode: box
+    unit_of_measurement: "€/kWh"
+
+input_text:
+  # Optional: menschenlesbare Infozeile zur A3-Rechnung
+  haus_allgemeinstrom_vormontage_info:
+    name: "Info: Vor-Montage-Berechnung"
+    max: 255
+
 # ────────────────────────────────────────────────────────────────────────────────
-# Utility-Meter (neutral)
+# Utility-Meter (neutral) – kWh
 # ────────────────────────────────────────────────────────────────────────────────
 utility_meter:
   haus_allgemein_energy_hour_kwh:
@@ -52,6 +75,37 @@ utility_meter:
   haus_allgemein_energy_year_kwh:
     source: sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh
     cycle: yearly
+
+  # ── NEU: Utility-Meter für €-Summen (Tag/Woche/Monat/Jahr), Quelle ist der Total-€-Zähler (siehe unten)
+  haus_allgemeinstrom_kosten_day_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: daily
+  haus_allgemeinstrom_kosten_week_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: weekly
+  haus_allgemeinstrom_kosten_month_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: monthly
+  haus_allgemeinstrom_kosten_year_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: yearly
+  
+  haus_allgemeinstrom_kosten_day_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: daily
+
+  haus_allgemeinstrom_kosten_week_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: weekly
+
+  haus_allgemeinstrom_kosten_month_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: monthly
+
+  haus_allgemeinstrom_kosten_year_eur:
+    source: sensor.haus_allgemeinstrom_kosten_total_eur
+    cycle: yearly
+
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Templates (neutral)
@@ -69,12 +123,15 @@ template:
           {% set rn = states('sensor.epex_spot_data_net_price') %}
           {% set rg = states('sensor.epex_spot_data_price') %}
           {% set chosen = rn if rn not in ['unknown','unavailable','none','None',''] else rg %}
-
           {# dynamischer Durchschnittspreis (Jahrssuffix optional) #}
-          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set y = states('input_number.abrechnungsjahr')|int(default=now().year)
+               if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None','']
+               else now().year %}
           {% set p_id_y = 'input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_' ~ y %}
-          {% set p_y    = states(p_id_y) %}
-          {% set p_neu  = (chosen if chosen not in ['unknown','unavailable','none','None',''] else (p_y if p_y not in ['unknown','unavailable','none','None',''] else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh'))) %}
+          {% set p_y = states(p_id_y) %}
+          {% set p_neu = (chosen if chosen not in ['unknown','unavailable','none','None','']
+                          else (p_y if p_y not in ['unknown','unavailable','none','None','']
+                          else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh'))) %}
           {{ (kwh * (p_neu | float(0))) | round(4) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Verbrauchskosten [€/h]"
@@ -86,16 +143,20 @@ template:
         unit_of_measurement: "d"
         state_class: measurement
         state: >-
-          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set y = states('input_number.abrechnungsjahr')|int(default=now().year)
+               if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None','']
+               else now().year %}
           {% set golive = states('input_datetime.haus_allgemeinstrom_golive') %}
-          {% set start  = as_datetime(y ~ '-01-01') %}
-          {% set dgo    = as_datetime(golive) if golive not in ['unknown','unavailable','none','None',''] else none %}
-          {% set days   = ((as_timestamp(dgo) - as_timestamp(start)) / 86400) if dgo else 0 %}
+          {% set start = as_datetime(y ~ '-01-01') %}
+          {% set dgo = as_datetime(golive) if golive not in ['unknown','unavailable','none','None',''] else none %}
+          {% set days = ((as_timestamp(dgo) - as_timestamp(start)) / 86400) if dgo else 0 %}
           {{ (days | int(0)) if days > 0 else 0 }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag: Tage 1.1.–Go-Live"
           jahr: >-
-            {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+            {% set y = states('input_number.abrechnungsjahr')|int(default=now().year)
+                 if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None','']
+                 else now().year %}
             {{ y }}
 
       # kWh Nachtrag (tagebasiert)
@@ -121,15 +182,18 @@ template:
         state_class: measurement
         state: >-
           {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_jan1_golive') | float(0) %}
-          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set y = states('input_number.abrechnungsjahr')|int(default=now().year)
+               if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None','']
+               else now().year %}
           {% set p_id_y = 'input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_' ~ y %}
-          {% set p_y    = states(p_id_y) %}
-          {% set p      = (p_y if p_y not in ['unknown','unavailable','none','None',''] else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh')) | float(0) %}
+          {% set p_y = states(p_id_y) %}
+          {% set p = (p_y if p_y not in ['unknown','unavailable','none','None','']
+                      else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh')) | float(0) %}
           {{ (kwh * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag 1.1.–Go-Live [€]"
 
-      # Nachtrag (Startwert-Methode) – optional wie bisher
+      # Nachtrag (Startwert-Methode) – optional
       - name: haus_allgemeinstrom_var_nachtrag_kwh_startwert
         unique_id: haus_allgemeinstrom_var_nachtrag_kwh_startwert
         unit_of_measurement: "kWh"
@@ -137,9 +201,9 @@ template:
         state_class: measurement
         state: >-
           {% set gesamt = states('sensor.zaehler_xiao_c6_s0_kanal_1_energie_gesamt_kwh') | float(0) %}
-          {% set start  = states('number.zaehler_haus_allgemein_haus_zahler_startwert_kanal_1_kwh') | float(0) %}
-          {% set year   = states('sensor.haus_allgemein_energy_year_kwh') | float(0) %}
-          {% set diff   = (gesamt - start - year) %}
+          {% set start = states('number.zaehler_haus_allgemein_haus_zahler_startwert_kanal_1_kwh') | float(0) %}
+          {% set year = states('sensor.haus_allgemein_energy_year_kwh') | float(0) %}
+          {% set diff = (gesamt - start - year) %}
           {{ (diff if diff > 0 else 0) | round(3) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag (Startwert-Methode) [kWh]"
@@ -151,15 +215,36 @@ template:
         state_class: measurement
         state: >-
           {% set kwh = states('sensor.haus_allgemeinstrom_var_nachtrag_kwh_startwert') | float(0) %}
-          {% set y  = states('input_number.abrechnungsjahr')|int(default=now().year) if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None',''] else now().year %}
+          {% set y = states('input_number.abrechnungsjahr')|int(default=now().year)
+               if states('input_number.abrechnungsjahr') not in ['unknown','unavailable','none','None','']
+               else now().year %}
           {% set p_id_y = 'input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh_' ~ y %}
-          {% set p_y    = states(p_id_y) %}
-          {% set p      = (p_y if p_y not in ['unknown','unavailable','none','None',''] else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh')) | float(0) %}
+          {% set p_y = states(p_id_y) %}
+          {% set p = (p_y if p_y not in ['unknown','unavailable','none','None','']
+                      else states('input_number.haus_betriebskosten_hausstrom_durchschnittspreis_eur_kwh')) | float(0) %}
           {{ (kwh * p) | round(2) }}
         attributes:
           friendly_name: "Haus – Allgemeinstrom Nachtrag (Startwert-Methode) [€]"
 
-  # Trigger-Template: aktualisiert die 'Tage' jede Nacht automatisch
+      # ── NEU: Option A3 (manuell) – Kosten & Infozeile
+      - name: haus_allgemeinstrom_vormontage_kosten_eur
+        unique_id: haus_allgemeinstrom_vormontage_kosten_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set kwh = states('input_number.haus_allgemeinstrom_vormontage_kwh')|float(0) %}
+          {% set p   = states('input_number.haus_allgemeinstrom_vormontage_preis_eur_kwh')|float(0) %}
+          {{ (kwh * p) | round(2) }}
+
+      - name: haus_allgemeinstrom_vormontage_info_sensor
+        unique_id: haus_allgemeinstrom_vormontage_info_sensor
+        state: >-
+          {% set kwh = states('input_number.haus_allgemeinstrom_vormontage_kwh')|float(0) %}
+          {% set p   = states('input_number.haus_allgemeinstrom_vormontage_preis_eur_kwh')|float(0) %}
+          {% set eur = (kwh * p) | round(2) %}
+          {{ kwh }} kWh × {{ p }} €/kWh = {{ eur }} € (Vor-Montage)
+
+  # Trigger-Template: aktualisiert die 'Tage' jede Nacht automatisch (Komfort)
   - trigger:
       - platform: time
         at: "00:00:00"
@@ -167,3 +252,54 @@ template:
       - name: haus_allgemeinstrom_nachtrag_tage_autorefresh
         unique_id: haus_allgemeinstrom_nachtrag_tage_autorefresh
         state: "{{ states('sensor.haus_allgemeinstrom_nachtrag_tage') }}"
+
+  # ── NEU: Fortlaufende Gesamtkosten (Total €) – addiert nur positive Deltas des Stunden-€-Sensors
+  - trigger:
+      - platform: state
+        entity_id: sensor.haus_allgemeinstrom_var_stunde_eur
+    sensor:
+      - name: haus_allgemeinstrom_kosten_total_eur
+        unique_id: haus_allgemeinstrom_kosten_total_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state_class: total_increasing
+        state: >-
+          {% set prev = trigger.from_state.state | float(0) if trigger and trigger.from_state else 0 %}
+          {% set curr = trigger.to_state.state   | float(0) if trigger and trigger.to_state   else 0 %}
+          {% set delta = curr - prev %}
+          {% set base  = this.state | float(0) %}
+          {{ (base + (delta if delta > 0 else 0)) | round(4) }}
+
+  # ── NEU: Jahresgesamt = Vor-Montage (A3) + laufendes Jahr (Utility-Meter)
+  - sensor:
+      - name: haus_allgemeinstrom_kosten_jahr_inkl_vormontage_eur
+        unique_id: haus_allgemeinstrom_kosten_jahr_inkl_vormontage_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {% set laufend = states('sensor.haus_allgemeinstrom_kosten_year_eur')|float(0) %}
+          {% set vor     = states('sensor.haus_allgemeinstrom_vormontage_kosten_eur')|float(0) %}
+          {{ (laufend + vor) | round(2) }}
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Optional: Info auch ins input_text spiegeln (komfortabel für Karten/Dashboards)
+# ────────────────────────────────────────────────────────────────────────────────
+automation:
+  - alias: "Allgemeinstrom: Vor-Montage Info aktualisieren"
+    id: strom_vormontage_info_update
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - input_number.haus_allgemeinstrom_vormontage_kwh
+          - input_number.haus_allgemeinstrom_vormontage_preis_eur_kwh
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.haus_allgemeinstrom_vormontage_info
+        data:
+          value: >-
+            {% set kwh = states('input_number.haus_allgemeinstrom_vormontage_kwh')|float(0) %}
+            {% set p   = states('input_number.haus_allgemeinstrom_vormontage_preis_eur_kwh')|float(0) %}
+            {% set eur = (kwh * p) | round(2) %}
+            {{ kwh }} kWh × {{ p }} €/kWh = {{ eur }} € (Vor-Montage)

@@ -1,45 +1,71 @@
 # /config/packages/99_bk_export.yaml
-# Betriebskosten-Export WHG01 (GET) – Server erlaubt nur GET.
-# Schickt alle Kosten-/Hilfsfelder mit, Jahr aus input_number.abrechnungsjahr.
-# Script zeigt danach einen ABSOLUTEN Link zur PDF (http://192.168.178.60:8123/local/exports/bk_<Jahr>_latest.pdf).
+# Betriebskosten-Export – lokal (HA liefert /local/... aus)
+# Server erwartet GET → wir senden beide Key-Varianten (mit & ohne whg01_).
 
 rest_command:
   export_betriebskosten_pdf:
     method: GET
-    timeout: 30
     url: >-
-      {% set inv = ['unknown','unavailable','none','None',''] %}
-      {% set y   = (states('input_number.abrechnungsjahr') if states('input_number.abrechnungsjahr') not in inv else now().year) | int %}
-      {% set sel = states('input_select.haus_verteilerschluessel') %}
-      {% set whg_f = states('input_number.whg01_wohnflaeche_m2') | replace(',', '.') | float(0) %}
-      {% set haus_f= states('input_number.haus_nutzflaeche_m2_gesamt') | replace(',', '.') | float(0) %}
-      {% set whg_p = states('input_number.whg01_personen') | int(0) %}
-      {% set haus_p= states('input_number.haus_bewohner_anzahl') | int(0) %}
-      {% set share = (whg_p / haus_p) if sel == 'personen' and haus_p > 0 else ((whg_f / haus_f) if haus_f > 0 else 0) %}
-      {% set k_m3  = states('sensor.whg01_wasser_kalt_m3_gesamt') | replace(',', '.') | float(0) %}
-      {% set w_m3  = states('sensor.whg01_wasser_warm_m3_gesamt') | replace(',', '.') | float(0) %}
-      {% set kwh   = states('sensor.whg01_strom_wp_kwh_gesamt') | replace(',', '.') | float(0) %}
-      {% set p_w   = states('input_number.haus_kosten_wasser_arbeitspreis_eur_m3') | replace(',', '.') | float(0) %}
-      {% set p_a   = states('input_number.haus_kosten_abwasser_arbeitspreis_eur_m3') | replace(',', '.') | float(0) %}
-      {% set p_st  = states('input_number.haus_kosten_strom_arbeitspreis_eur_kwh') | replace(',', '.') | float(0) %}
-      {% set gp_st = states('input_number.whg01_strom_grundpreis_anteil_eur') | replace(',', '.') | float(0) %}
-      {% set gr    = states('input_number.grundsteuer_eur_jahr_' ~ y) | replace(',', '.') | float(0) %}
-      {% set vs    = states('input_number.versicherung_eur_jahr_' ~ y) | replace(',', '.') | float(0) %}
-      {% set mu    = states('input_number.muell_eur_jahr_' ~ y) | replace(',', '.') | float(0) %}
-      {% set nw    = states('input_number.niederschlagswasser_eur_jahr_' ~ y) | replace(',', '.') | float(0) %}
-      {% set hz_w  = states('input_number.haus_betriebskosten_wartung_heizung_eur') | replace(',', '.') | float(0) %}
-      {% set abr_s = states('input_number.haus_betriebskosten_abrechnungsservice_eur') | replace(',', '.') | float(0) %}
-      {% set strom_var_eur = (kwh * p_st) | round(2) %}
-      {% set wasser_eur    = ((k_m3 + w_m3) * p_w) | round(2) %}
-      {% set abwasser_eur  = ((k_m3 + w_m3) * p_a) | round(2) %}
-      {% set grundst_eur   = (gr * share) | round(2) %}
-      {% set versich_eur   = (vs * share) | round(2) %}
-      {% set muell_eur     = (mu * share) | round(2) %}
-      {% set niedersch_eur = (nw * share) | round(2) %}
-      {% set wartung_eur   = (hz_w * share) | round(2) %}
-      {% set abrech_eur    = (abr_s * share) | round(2) %}
-      {% set summe_eur     = (strom_var_eur + (gp_st | round(2)) + wasser_eur + abwasser_eur + grundst_eur + versich_eur + muell_eur + niedersch_eur + wartung_eur + abrech_eur) | round(2) %}
-      http://192.168.178.5:5000/export?wohnung=WHG01&abrechnungsjahr={{ y }}&created_at={{ now().strftime('%Y-%m-%dT%H:%M:%S%z') | urlencode }}&verteilerschluessel={{ sel | urlencode }}&share={{ ('%.6f' % share) | urlencode }}&wasser_kalt_m3_gesamt={{ k_m3 | round(3) }}&wasser_warm_m3_gesamt={{ w_m3 | round(3) }}&strom_kwh_gesamt={{ kwh | round(3) }}&kosten_wasser_eur_m3={{ p_w }}&kosten_abwasser_eur_m3={{ p_a }}&kosten_strom_eur_kwh={{ p_st }}&strom_grundpreis_whg_eur={{ gp_st }}&haus_grundsteuer_eur={{ gr }}&haus_versicherung_eur={{ vs }}&haus_muell_eur={{ mu }}&haus_niederschlagswasser_eur={{ nw }}&haus_wartung_heizung_eur={{ hz_w }}&haus_abrechnungsservice_eur={{ abr_s }}&whg01_strom_variabel_anteil_eur={{ strom_var_eur }}&whg01_strom_grundpreis_anteil_eur={{ gp_st | round(2) }}&whg01_wasser_anteil_eur={{ wasser_eur }}&whg01_abwasser_anteil_eur={{ abwasser_eur }}&whg01_grundsteuer_anteil_eur={{ grundst_eur }}&whg01_versicherung_anteil_eur={{ versich_eur }}&whg01_muell_anteil_eur={{ muell_eur }}&whg01_niederschlagswasser_anteil_eur={{ niedersch_eur }}&whg01_wartung_heizung_anteil_eur={{ wartung_eur }}&whg01_abrechnungsservice_anteil_eur={{ abrech_eur }}&summe_eur={{ summe_eur }}&v={{ now().timestamp() | int }}
+      {% set y   = (states('input_number.abrechnungsjahr')|int(0)) or now().year %}
+      {% set sel = states('input_select.haus_verteilerschluessel') or 'flaeche' %}
+      {% set share = (state_attr('sensor.whg01_share','share_factor')|float(0)) %}
+      {% set k_m3  = states('sensor.whg01_wasser_kalt_m3_gesamt')|float(0) %}
+      {% set w_m3  = states('sensor.whg01_wasser_warm_m3_gesamt')|float(0) %}
+      {% set kwh   = states('sensor.whg01_strom_kwh_gesamt_auto')|float(0) %}
+      {% set p_w   = states('sensor.haus_kosten_wasser_eur_m3_eff')|float(0) %}
+      {% set p_a   = states('sensor.haus_kosten_abwasser_eur_m3_eff')|float(0) %}
+      {% set p_st  = states('sensor.haus_kosten_strom_eur_kwh_eff')|float(0) %}
+      {% set b_w   = states('sensor.whg01_wasser_anteil_eur')|float(0) %}
+      {% set b_a   = states('sensor.whg01_abwasser_anteil_eur')|float(0) %}
+      {% set b_sv  = states('sensor.whg01_strom_variabel_anteil_eur')|float(0) %}
+      {% set b_sg  = states('sensor.whg01_strom_grundpreis_anteil_eur')|float(0) %}
+      {% set b_g   = states('sensor.whg01_grundsteuer_anteil_eur')|float(0) %}
+      {% set b_v   = states('sensor.whg01_versicherung_anteil_eur')|float(0) %}
+      {% set b_m   = states('sensor.whg01_muell_anteil_eur')|float(0) %}
+      {% set b_n   = states('sensor.whg01_niederschlagswasser_anteil_eur')|float(0) %}
+      {% set b_wh  = states('sensor.whg01_wartung_heizung_anteil_eur')|float(0) %}
+      {% set b_as  = states('sensor.whg01_abrechnungsservice_anteil_eur')|float(0) %}
+      {% set b_sum = states('sensor.whg01_betriebskosten_summe_eur')|float(0) %}
+      {% set qp = [
+          'wohnung=WHG01',
+          'whg=whg01',
+          'abrechnungsjahr=' ~ y,
+          'jahr=' ~ y,
+          'created_at=' ~ (now().isoformat() | urlencode),
+          'verteilerschluessel=' ~ (sel | urlencode),
+          'share=' ~ ('%.6f' % share),
+          'wasser_kalt_m3_gesamt=' ~ ('%.3f' % k_m3),
+          'wasser_warm_m3_gesamt=' ~ ('%.3f' % w_m3),
+          'strom_kwh_gesamt=' ~ ('%.3f' % kwh),
+          'kosten_wasser_eur_m3=' ~ ('%.4f' % p_w),
+          'kosten_abwasser_eur_m3=' ~ ('%.4f' % p_a),
+          'kosten_strom_eur_kwh=' ~ ('%.4f' % p_st),
+          'wasser_anteil_eur=' ~ ('%.2f' % b_w),
+          'abwasser_anteil_eur=' ~ ('%.2f' % b_a),
+          'strom_variabel_anteil_eur=' ~ ('%.2f' % b_sv),
+          'strom_grundpreis_anteil_eur=' ~ ('%.2f' % b_sg),
+          'grundsteuer_anteil_eur=' ~ ('%.2f' % b_g),
+          'versicherung_anteil_eur=' ~ ('%.2f' % b_v),
+          'muell_anteil_eur=' ~ ('%.2f' % b_m),
+          'niederschlagswasser_anteil_eur=' ~ ('%.2f' % b_n),
+          'wartung_heizung_anteil_eur=' ~ ('%.2f' % b_wh),
+          'abrechnungsservice_anteil_eur=' ~ ('%.2f' % b_as),
+          'betriebskosten_summe_eur=' ~ ('%.2f' % b_sum),
+          'whg01_wasser_anteil_eur=' ~ ('%.2f' % b_w),
+          'whg01_abwasser_anteil_eur=' ~ ('%.2f' % b_a),
+          'whg01_strom_variabel_anteil_eur=' ~ ('%.2f' % b_sv),
+          'whg01_strom_grundpreis_anteil_eur=' ~ ('%.2f' % b_sg),
+          'whg01_grundsteuer_anteil_eur=' ~ ('%.2f' % b_g),
+          'whg01_versicherung_anteil_eur=' ~ ('%.2f' % b_v),
+          'whg01_muell_anteil_eur=' ~ ('%.2f' % b_m),
+          'whg01_niederschlagswasser_anteil_eur=' ~ ('%.2f' % b_n),
+          'whg01_wartung_heizung_anteil_eur=' ~ ('%.2f' % b_wh),
+          'whg01_abrechnungsservice_anteil_eur=' ~ ('%.2f' % b_as),
+          'whg01_betriebskosten_summe_eur=' ~ ('%.2f' % b_sum),
+          'debug=1',
+          'v=' ~ (now().timestamp() | int | string)
+      ] %}
+      http://192.168.178.5:5000/export?{{ qp | join('&') }}
 
 script:
   export_betriebskosten_pdf_now:
@@ -47,17 +73,15 @@ script:
     mode: single
     sequence:
       - variables:
-          y: "{{ (states('input_number.abrechnungsjahr') | int(default=now().year)) }}"
+          y: "{{ (states('input_number.abrechnungsjahr')|int(0)) or now().year }}"
           t: "{{ now().timestamp() | int }}"
-          base: "http://192.168.178.60:8123"   # <- HIER ggf. auf deine HA-URL ändern
+          base_url: "http://192.168.178.60:8123"
       - service: rest_command.export_betriebskosten_pdf
-      - delay: "00:00:01"
       - service: persistent_notification.create
         data:
           title: "Betriebskosten-Export {{ y }}"
           message: >-
-            Fertig. Öffnen:
-            [bk_{{ y }}_latest.pdf]({{ base }}/local/exports/bk_{{ y }}_latest.pdf?v={{ t }})
+            Fertig. Öffnen: {{ base_url }}/local/exports/bk_{{ y }}_latest.pdf?v={{ t }}
           notification_id: "bk_pdf_export"
 
 template:
