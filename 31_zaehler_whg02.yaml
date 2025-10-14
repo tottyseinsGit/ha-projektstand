@@ -154,6 +154,96 @@ template:
             {{ as_local(base.replace(year=base.year + y)).isoformat() }}
           {% else %} {{ none }} {% endif %}
 
+      # Effektive Zähler-ID – Haushalt (MQTT bevorzugt)
+      - name: "WHG02 – Strom Haushalt: Zähler-ID (effektiv)"
+        unique_id: whg02_strom_meter_id_effektiv
+        state: >-
+          {% set mqtt = states('sensor.whg02_strom_meter_serial') %}
+          {% set man = states('input_text.whg02_strom_meter_id') %}
+          {% set mqtt_ok = mqtt not in ['unknown','unavailable','','none'] %}
+          {% set man_ok  = man  not in ['unknown','unavailable','','none'] %}
+          {% if mqtt_ok %} {{ mqtt | string }}
+          {% elif man_ok %} {{ man }}
+          {% else %} {{ none }} {% endif %}
+        attributes:
+          quelle: >-
+            {% set mqtt = states('sensor.whg02_strom_meter_serial') %}
+            {{ 'mqtt' if mqtt not in ['unknown','unavailable','','none'] else 'manuell' }}
+          mqtt_roh: "{{ states('sensor.whg02_strom_meter_serial') }}"
+          manuell: "{{ states('input_text.whg02_strom_meter_id') }}"
+# ───────────────────────────────────────────────────────────────────────────────
+# MQTT – Strom Haushalt über ZGW16-IP
+# ───────────────────────────────────────────────────────────────────────────────
+mqtt:
+  sensor:
+    # ===== Strom HAUSHALT (devices/1) =====
+    - name: "whg02_strom_kwh_total"
+      unique_id: whg02_strom_kwh_total
+      state_topic: "ZGW16-IP/devices/5/Total_imported_active_energy"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:lightning-bolt
+
+    - name: "whg02_strom_power_w"
+      unique_id: whg02_strom_power_w
+      state_topic: "ZGW16-IP/devices/5/Total_active_power"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:flash
+
+    - name: "whg02_strom_l1_current_a"
+      unique_id: whg02_strom_l1_current_a
+      state_topic: "ZGW16-IP/devices/5/L1_Current"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+    - name: "whg02_strom_l2_current_a"
+      unique_id: whg04_strom_l2_current_a
+      state_topic: "ZGW16-IP/devices/5/L2_Current"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+    - name: "whg02_strom_l3_current_a"
+      unique_id: whg02_strom_l3_current_a
+      state_topic: "ZGW16-IP/devices/5/L3_Current"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+
+    - name: "whg02_strom_l1_voltage_v"
+      unique_id: whg02_strom_l1_voltage_v
+      state_topic: "ZGW16-IP/devices/5/Voltage_of_L1_to_N"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+    - name: "whg02_strom_l2_voltage_v"
+      unique_id: whg02_strom_l2_voltage_v
+      state_topic: "ZGW16-IP/devices/5/Voltage_of_L2_to_N"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+    - name: "whg02_strom_l3_voltage_v"
+      unique_id: whg02_strom_l3_voltage_v
+      state_topic: "ZGW16-IP/devices/5/Voltage_of_L3_to_N"
+      value_template: "{{ value_json.value | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+
+    - name: "whg02_strom_meter_serial"
+      unique_id: whg02_strom_meter_serial
+      state_topic: "ZGW16-IP/devices/5/Serial_number"
+      value_template: "{{ value_json.value | float(0) }}"
+      icon: mdi:numeric
 # ───────────────────────────────────────────────────────────────────────────────
 # MQTT → WaterStar M (wmbusmeters)
 # ───────────────────────────────────────────────────────────────────────────────
@@ -220,3 +310,21 @@ template:
         device_class: water
         state_class: total_increasing
         state: "{{ states('sensor.whg02_wasser_total_m3') | float(0) }}"
+      
+      # Effektive Zähler-ID – Haushalt (MQTT bevorzugt)
+      - name: "WHG02 – Strom Haushalt: Zähler-ID (effektiv)"
+        unique_id: whg02_strom_meter_id_effektiv
+        state: >-
+          {% set mqtt = states('sensor.whg02_strom_meter_serial') %}
+          {% set man = states('input_text.whg02_strom_meter_id') %}
+          {% set mqtt_ok = mqtt not in ['unknown','unavailable','','none'] %}
+          {% set man_ok  = man  not in ['unknown','unavailable','','none'] %}
+          {% if mqtt_ok %} {{ mqtt | string }}
+          {% elif man_ok %} {{ man }}
+          {% else %} {{ none }} {% endif %}
+        attributes:
+          quelle: >-
+            {% set mqtt = states('sensor.whg02_strom_meter_serial') %}
+            {{ 'mqtt' if mqtt not in ['unknown','unavailable','','none'] else 'manuell' }}
+          mqtt_roh: "{{ states('sensor.whg02_strom_meter_serial') }}"
+          manuell: "{{ states('input_text.whg02_strom_meter_id') }}"

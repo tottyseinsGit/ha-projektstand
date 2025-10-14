@@ -1,0 +1,115 @@
+# /config/packages/00_restore_input_numbers.yaml
+# Stellt die von dir genannten input_number-Entitäten exakt wieder her.
+
+input_number:
+  
+
+  haus_allgemeinstrom_vormontage_preis_eur_kwh:
+    min: 0
+    max: 10
+    step: 0.0001
+    unit_of_measurement: EUR/kWh
+    mode: box
+
+  haus_allgemeinstrom_vormontage_kwh:
+    min: 0
+    max: 1000000
+    step: 0.01
+    unit_of_measurement: kWh
+    mode: box
+
+  haus_betriebskosten_heizung_ww_summe_eur:
+    min: 0
+    max: 1000000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_betriebskosten_heizung_ww_zaehlerstand:
+    min: 0
+    max: 10000000
+    step: 0.01
+    unit_of_measurement: kWh
+    mode: box
+
+  haus_betriebskosten_wasser_grundpreis_eur:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_kosten_abwasser_arbeitspreis_eur_m3:
+    min: 0
+    max: 100
+    step: 0.0001
+    unit_of_measurement: EUR/m³
+    mode: box
+
+  haus_betriebskosten_abwasser_grundpreis_eur:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_kosten_gebaeudeversicherung_eur_jahr:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_kosten_wasser_arbeitspreis_eur_m3:
+    min: 0
+    max: 100
+    step: 0.0001
+    unit_of_measurement: EUR/m³
+    mode: box
+
+  haus_betriebskosten_wartung_heizung_eur:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_betriebskosten_abrechnungsservice_eur:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_kosten_grundsteuer_eur_jahr:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_betriebskosten_muellabfuhr_eur:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+  haus_betriebskosten_niederschlagswasser_eur:
+    min: 0
+    max: 100000
+    step: 0.01
+    unit_of_measurement: EUR
+    mode: box
+
+ 
+    
+
+  
+
+  haus_kosten_strom_grundpreis_eur_monat:
+    min: 0
+    max: 10000
+    step: 0.01
+    unit_of_measurement: EUR/Monat
+    mode: box
