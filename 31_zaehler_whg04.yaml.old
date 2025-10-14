@@ -1,5 +1,8 @@
 # /config/packages/31_zaehler_whg04.yaml
-# Zähler & Eichfristen – WHG04 (Haushalt + EV)
+# Zähler & Eichfristen – WHG04 (mit ZWEI Stromzählern: Haushalt + EV)
+# - jahresneutrale Entity-IDs
+# - Wasser/WMZ ohne Keys
+# - Strom (Haushalt) via ZGW16-IP/devices/1/… ; EV via ZGW16-IP/devices/2/…
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Stammdaten
@@ -328,7 +331,7 @@ utility_meter:
     cycle: yearly
 
 # ───────────────────────────────────────────────────────────────────────────────
-# Template – Ablaufdaten & Zähler-ID-Logik (einziger Block)
+# Templated Sensoren – Ablaufdaten & Zähler-ID-Logik
 # ───────────────────────────────────────────────────────────────────────────────
 template:
   - sensor:
@@ -454,7 +457,7 @@ template:
           mqtt_roh: "{{ states('sensor.whg04_strom_ev_meter_serial') }}"
           manuell: "{{ states('input_text.whg04_strom_ev_meter_id') }}"
 
-      # Kosten – vor Montage / ab Montage / Gesamt
+      # WHG04 Stromkosten – A3 + laufend + Gesamt
       - name: "WHG04 – Strom vor Montage €"
         unique_id: whg04_strom_vormontage_kosten_eur
         device_class: monetary

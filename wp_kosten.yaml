@@ -2,7 +2,7 @@
 # WP-Kosten: Rate = Leistung(kW) × Preis(€/kWh) + saubere Summen (Stunde/Tag/Monat/Jahr)
 
 # ───────────────────────────────────────────────────────────
-# 1) Kostenrate [€/h] – sofort sichtbar
+# 1) Kostenrate [€/h] – sofort sichtbar (Trigger + Template)
 # ───────────────────────────────────────────────────────────
 template:
   - trigger:
@@ -16,40 +16,62 @@ template:
       - name: "WP – Kostenrate [€/h]"
         unique_id: wp_kostenrate_eur_h
         unit_of_measurement: "€/h"
-        state: >
+        state: >-
           {{
             (
-              (states('sensor.zaehler_xiao_c6_s0_kanal_1_leistung_w')|float(0) / 1000)
-              * (states('sensor.epex_spot_data_price')|float(0))
+              ( states('sensor.zaehler_xiao_c6_s0_kanal_1_leistung_w') | float(0) / 1000 )
+              * ( states('sensor.epex_spot_data_price') | float(0) )
             ) | round(2)
           }}
 
+  # ───────────────────────────────────────────────────────────
+  # 2b) Stundenkosten – aus kWh dieser Stunde (Anzeige in €)
+  #    (nutzt Utility-Meter 'wp_energy_hour' + aktuellen Preis)
+  # ───────────────────────────────────────────────────────────
+  - sensor:
+      - name: "WP – Kosten aktuelle Stunde [€]"
+        unique_id: wp_kosten_stunde_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: >-
+          {{
+            (
+              states('sensor.wp_energy_hour') | float(0)
+              * states('sensor.epex_spot_data_price') | float(0)
+            ) | round(2)
+          }}
+
+  # ───────────────────────────────────────────────────────────
+  # 3c) Anzeige-Felder (€) für Tag / Monat / Jahr
+  #    (runden die RAW-Zähler aus dem Utility-Meter unten)
+  # ───────────────────────────────────────────────────────────
+  - sensor:
+      - name: "WP – Kosten Tag [€]"
+        unique_id: wp_kosten_tag_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: "{{ states('sensor.wp_kosten_tag_raw') | float(0) | round(2) }}"
+      - name: "WP – Kosten Monat [€]"
+        unique_id: wp_kosten_monat_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: "{{ states('sensor.wp_kosten_monat_raw') | float(0) | round(2) }}"
+      - name: "WP – Kosten Jahr [€]"
+        unique_id: wp_kosten_jahr_eur
+        unit_of_measurement: "€"
+        device_class: monetary
+        state: "{{ states('sensor.wp_kosten_jahr_raw') | float(0) | round(2) }}"
+
 # ───────────────────────────────────────────────────────────
-# 2) Stundenkosten – direkt aus kWh dieser Stunde
-#    (damit sie IMMER sofort steigen, ohne Integration)
+# 2a) Stunden-kWh – Utility-Meter direkt vom kWh-Gesamtzähler
 # ───────────────────────────────────────────────────────────
 utility_meter:
   wp_energy_hour:
     source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh
     cycle: hourly
 
-template:
-  - sensor:
-      - name: "WP – Kosten aktuelle Stunde [€]"
-        unique_id: wp_kosten_stunde_eur
-        unit_of_measurement: "€"
-        device_class: monetary
-        state: >
-          {{
-            (
-              states('sensor.wp_energy_hour')|float(0)
-              * states('sensor.epex_spot_data_price')|float(0)
-            ) | round(2)
-          }}
-
 # ───────────────────────────────────────────────────────────
-# 3) Kumulierte € – für Tag/Monat/Jahr
-#    (Integration der Kostenrate → €-Zähler; dann Utility Meter)
+# 3a) Kumulierte €-Integration (aus Kostenrate [€/h])
 # ───────────────────────────────────────────────────────────
 sensor:
   - platform: integration
@@ -58,6 +80,9 @@ sensor:
     unit_time: h
     round: 6
 
+# ───────────────────────────────────────────────────────────
+# 3b) Utility-Meter für die kumulierten € (Tag/Monat/Jahr)
+# ───────────────────────────────────────────────────────────
 utility_meter:
   wp_kosten_tag_raw:
     source: sensor.wp_kosten_kumuliert_eur_raw
@@ -68,21 +93,3 @@ utility_meter:
   wp_kosten_jahr_raw:
     source: sensor.wp_kosten_kumuliert_eur_raw
     cycle: yearly
-
-template:
-  - sensor:
-      - name: "WP – Kosten Tag [€]"
-        unique_id: wp_kosten_tag_eur
-        unit_of_measurement: "€"
-        device_class: monetary
-        state: "{{ states('sensor.wp_kosten_tag_raw')|float(0)|round(2) }}"
-      - name: "WP – Kosten Monat [€]"
-        unique_id: wp_kosten_monat_eur
-        unit_of_measurement: "€"
-        device_class: monetary
-        state: "{{ states('sensor.wp_kosten_monat_raw')|float(0)|round(2) }}"
-      - name: "WP – Kosten Jahr [€]"
-        unique_id: wp_kosten_jahr_eur
-        unit_of_measurement: "€"
-        device_class: monetary
-        state: "{{ states('sensor.wp_kosten_jahr_raw')|float(0)|round(2) }}"
