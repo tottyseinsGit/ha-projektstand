@@ -1,8 +1,9 @@
 # /config/packages/wp_kosten.yaml
-# WP-Kosten: Rate = Leistung(kW) × Preis(€/kWh) + saubere Summen (Stunde/Tag/Monat/Jahr)
+# WP-Kosten: Rate = Leistung(kW) × Preis(€/kWh) + Summen (Stunde/Tag/Monat/Jahr)
 
 # ───────────────────────────────────────────────────────────
-# 1) Kostenrate [€/h] – sofort sichtbar (Trigger + Template)
+# 1) Kostenrate [€/h] + Anzeige-Sensoren via Template
+#    (ein gemeinsamer template:-Block, mehrere Listeneinträge)
 # ───────────────────────────────────────────────────────────
 template:
   - trigger:
@@ -24,11 +25,8 @@ template:
             ) | round(2)
           }}
 
-  # ───────────────────────────────────────────────────────────
-  # 2b) Stundenkosten – aus kWh dieser Stunde (Anzeige in €)
-  #    (nutzt Utility-Meter 'wp_energy_hour' + aktuellen Preis)
-  # ───────────────────────────────────────────────────────────
   - sensor:
+      # 2) Stundenkosten (€) aus kWh dieser Stunde × aktueller Preis
       - name: "WP – Kosten aktuelle Stunde [€]"
         unique_id: wp_kosten_stunde_eur
         unit_of_measurement: "€"
@@ -41,11 +39,8 @@ template:
             ) | round(2)
           }}
 
-  # ───────────────────────────────────────────────────────────
-  # 3c) Anzeige-Felder (€) für Tag / Monat / Jahr
-  #    (runden die RAW-Zähler aus dem Utility-Meter unten)
-  # ───────────────────────────────────────────────────────────
   - sensor:
+      # 3) Anzeige-Felder (€) für Tag / Monat / Jahr (gerundet)
       - name: "WP – Kosten Tag [€]"
         unique_id: wp_kosten_tag_eur
         unit_of_measurement: "€"
@@ -63,27 +58,15 @@ template:
         state: "{{ states('sensor.wp_kosten_jahr_raw') | float(0) | round(2) }}"
 
 # ───────────────────────────────────────────────────────────
-# 2a) Stunden-kWh – Utility-Meter direkt vom kWh-Gesamtzähler
+# 2) Utility-Meter – EIN Block für Stunde + €-RAW (Tag/Monat/Jahr)
 # ───────────────────────────────────────────────────────────
 utility_meter:
+  # Stunden-kWh direkt vom Gesamtzähler
   wp_energy_hour:
     source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh
     cycle: hourly
 
-# ───────────────────────────────────────────────────────────
-# 3a) Kumulierte €-Integration (aus Kostenrate [€/h])
-# ───────────────────────────────────────────────────────────
-sensor:
-  - platform: integration
-    source: sensor.wp_kostenrate_eur_h
-    name: wp_kosten_kumuliert_eur_raw
-    unit_time: h
-    round: 6
-
-# ───────────────────────────────────────────────────────────
-# 3b) Utility-Meter für die kumulierten € (Tag/Monat/Jahr)
-# ───────────────────────────────────────────────────────────
-utility_meter:
+  # Kumulierte € (RAW) – werden unten per Integration erzeugt
   wp_kosten_tag_raw:
     source: sensor.wp_kosten_kumuliert_eur_raw
     cycle: daily
@@ -93,3 +76,13 @@ utility_meter:
   wp_kosten_jahr_raw:
     source: sensor.wp_kosten_kumuliert_eur_raw
     cycle: yearly
+
+# ───────────────────────────────────────────────────────────
+# 3) Kumulierte €-Integration (aus Kostenrate [€/h])
+# ───────────────────────────────────────────────────────────
+sensor:
+  - platform: integration
+    source: sensor.wp_kostenrate_eur_h
+    name: wp_kosten_kumuliert_eur_raw
+    unit_time: h
+    round: 6
