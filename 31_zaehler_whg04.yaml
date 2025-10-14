@@ -221,7 +221,6 @@ mqtt:
       unit_of_measurement: "V"
       device_class: voltage
       state_class: measurement
-
     - name: "whg04_strom_meter_serial"
       unique_id: whg04_strom_meter_serial
       state_topic: "ZGW16-IP/devices/1/Serial_number"

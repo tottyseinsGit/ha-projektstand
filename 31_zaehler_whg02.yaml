@@ -238,11 +238,10 @@ mqtt:
       unit_of_measurement: "V"
       device_class: voltage
       state_class: measurement
-
     - name: "whg02_strom_meter_serial"
       unique_id: whg02_strom_meter_serial
       state_topic: "ZGW16-IP/devices/5/Serial_number"
-      value_template: "{{ value_json.value | float(0) }}"
+      value_template: "{{ value_json.value | string }}"
       icon: mdi:numeric
 # ───────────────────────────────────────────────────────────────────────────────
 # MQTT → WaterStar M (wmbusmeters)
