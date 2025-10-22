@@ -1,0 +1,41 @@
+# WHG04 – Kosten aus Leistung × EPEX NET → Integration (€) → Utility Meter (Tag/Monat/Jahr)
+# Leistung (W): sensor.homeassistant_zgw16_ip_total_active_power   <-- ggf. anpassen
+# EPEX NET (€/kWh): sensor.epex_spot_data_net_price
+
+template:
+  - trigger:
+      - platform: state
+        entity_id:
+          - sensor.homeassistant_zgw16_ip_total_active_power
+          - sensor.epex_spot_data_net_price
+      - platform: time_pattern
+        seconds: "/30"
+    sensor:
+      - name: "WHG04 – Strom Kostenrate EPEX NET [€/h]"
+        unique_id: whg04_strom_kostenrate_epex_net_eur_h
+        unit_of_measurement: "€/h"
+        icon: mdi:currency-eur
+        state: >-
+          {% set p_w = states('sensor.homeassistant_zgw16_ip_total_active_power')|float(0) %}
+          {% set p_epex = states('sensor.epex_spot_data_net_price')|float(0) %}
+          {{ ((p_w / 1000.0) * p_epex) | round(6) }}
+
+sensor:
+  - platform: integration
+    source: sensor.whg04_strom_kostenrate_epex_net_eur_h
+    name: whg04_strom_kosten_eur_raw_epex_net
+    unit_time: h
+    unit_prefix: null
+    method: trapezoidal
+    round: 6
+
+utility_meter:
+  whg04_strom_kosten_tag_epex_net:
+    source: sensor.whg04_strom_kosten_eur_raw_epex_net
+    cycle: daily
+  whg04_strom_kosten_monat_epex_net:
+    source: sensor.whg04_strom_kosten_eur_raw_epex_net
+    cycle: monthly
+  whg04_strom_kosten_jahr_epex_net:
+    source: sensor.whg04_strom_kosten_eur_raw_epex_net
+    cycle: yearly

@@ -1,0 +1,269 @@
+homeassistant:
+  customize: {}
+
+modbus:
+  - name: victron
+    type: tcp
+    host: 192.168.178.26
+    port: 502
+    delay: 1
+    timeout: 5
+    message_wait_milliseconds: 50
+
+    sensors:
+      # --- AC-Verbrauch pro Phase (W) ---
+      - name: victron_sys_ac_consumption_l1_w
+        unique_id: victron_sys_ac_consumption_l1_w
+        slave: 100
+        address: 817
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_ac_consumption_l2_w
+        unique_id: victron_sys_ac_consumption_l2_w
+        slave: 100
+        address: 818
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_ac_consumption_l3_w
+        unique_id: victron_sys_ac_consumption_l3_w
+        slave: 100
+        address: 819
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      # --- Netzleistung pro Phase (W): +Bezug / −Einspeisung ---
+      - name: victron_sys_grid_l1_w
+        unique_id: victron_sys_grid_l1_w
+        slave: 100
+        address: 820
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_grid_l2_w
+        unique_id: victron_sys_grid_l2_w
+        slave: 100
+        address: 821
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_grid_l3_w
+        unique_id: victron_sys_grid_l3_w
+        slave: 100
+        address: 822
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      # --- Batterie (System aggregiert) ---
+      - name: victron_sys_battery_voltage_v
+        unique_id: victron_sys_battery_voltage_v
+        slave: 100
+        address: 840
+        input_type: holding
+        data_type: uint16
+        scale: 0.1        # 2302 -> 230.2V Beispiel; hier ~51.2V
+        precision: 1
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_battery_current_a
+        unique_id: victron_sys_battery_current_a
+        slave: 100
+        address: 841
+        input_type: holding
+        data_type: int16
+        scale: 0.1        # 61 -> 6.1A (Laden + / Entladen −)
+        precision: 1
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_battery_power_w
+        unique_id: victron_sys_battery_power_w
+        slave: 100
+        address: 842
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_sys_battery_soc_percent
+        unique_id: victron_sys_battery_soc_percent
+        slave: 100
+        address: 843
+        input_type: holding
+        data_type: uint16
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        scan_interval: 15
+
+      - name: victron_sys_battery_state_raw
+        unique_id: victron_sys_battery_state_raw
+        slave: 100
+        address: 844
+        input_type: holding
+        data_type: uint16
+        scan_interval: 10
+
+      # --- PV (DC-gekoppelt, Summe) ---
+      - name: victron_sys_pv_dc_coupled_w
+        unique_id: victron_sys_pv_dc_coupled_w
+        slave: 100
+        address: 850
+        input_type: holding
+        data_type: uint16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      # --- Ladegerät-/DC-Systemleistung (optional, nützlich für Flussbilder) ---
+      - name: victron_sys_charger_power_w
+        unique_id: victron_sys_charger_power_w
+        slave: 100
+        address: 855
+        input_type: holding
+        data_type: uint16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 10
+
+      - name: victron_sys_dc_system_power_w
+        unique_id: victron_sys_dc_system_power_w
+        slave: 100
+        address: 860
+        input_type: holding
+        data_type: int16
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 10
+
+      # --- ESS Grid-Setpoint (nur LESEN) ---
+      - name: victron_ess_grid_setpoint_w_32
+        unique_id: victron_ess_grid_setpoint_w_32
+        slave: 100
+        address: 2716
+        input_type: holding
+        data_type: int32      # NEU (volatile) ab VenusOS ~3.50
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: victron_ess_grid_setpoint_w_legacy
+        unique_id: victron_ess_grid_setpoint_w_legacy
+        slave: 100
+        address: 2700
+        input_type: holding
+        data_type: int16      # Legacy (ältere FW)
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+template:
+  - sensor:
+      # Summen
+      - name: victron_sys_ac_consumption_total_w
+        unique_id: victron_sys_ac_consumption_total_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set l1 = states('sensor.victron_sys_ac_consumption_l1_w')|int(0) %}
+          {% set l2 = states('sensor.victron_sys_ac_consumption_l2_w')|int(0) %}
+          {% set l3 = states('sensor.victron_sys_ac_consumption_l3_w')|int(0) %}
+          {{ l1 + l2 + l3 }}
+
+      - name: victron_sys_grid_total_w
+        unique_id: victron_sys_grid_total_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set g1 = states('sensor.victron_sys_grid_l1_w')|int(0) %}
+          {% set g2 = states('sensor.victron_sys_grid_l2_w')|int(0) %}
+          {% set g3 = states('sensor.victron_sys_grid_l3_w')|int(0) %}
+          {{ g1 + g2 + g3 }}
+
+      - name: victron_sys_battery_charge_w
+        unique_id: victron_sys_battery_charge_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_sys_battery_power_w')|int(0) %}
+          {{ p if p>0 else 0 }}
+
+      - name: victron_sys_battery_discharge_w
+        unique_id: victron_sys_battery_discharge_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_sys_battery_power_w')|int(0) %}
+          {{ -p if p<0 else 0 }}
+
+      # ESS-Setpoint vereinheitlicht (nimmt 32-bit wenn vorhanden)
+      - name: victron_ess_grid_setpoint_w
+        unique_id: victron_ess_grid_setpoint_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set n = states('sensor.victron_ess_grid_setpoint_w_32') %}
+          {% if n not in ['unknown','unavailable',''] %}
+            {{ n }}
+          {% else %}
+            {{ states('sensor.victron_ess_grid_setpoint_w_legacy') }}
+          {% endif %}
+
+  - select:
+      # Lesbarer Batteriestatus aus dem Rohcode
+      - name: victron_sys_battery_state
+        unique_id: victron_sys_battery_state
+        options:
+          - Idle
+          - Charging
+          - Discharging
+          - Unknown
+        state: >
+          {% set v = states('sensor.victron_sys_battery_state_raw')|int(-1) %}
+          {% if v == 0 %} Idle
+          {% elif v == 1 %} Charging
+          {% elif v == 2 %} Discharging
+          {% else %} Unknown
+          {% endif %}

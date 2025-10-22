@@ -1,3 +1,0 @@
-# /config/packages/tibber_data.yaml
-tibber_data:
-  # keine Optionen nötig – nutzt die bestehende Tibber-Integration (Token aus der UI)

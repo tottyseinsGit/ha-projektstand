@@ -1,0 +1,178 @@
+# /config/packages/31_zaehler_whg01.yaml
+# WHG01 – Wasser (Discovery-basiert): Stammdaten + Vor-Montage (Eingaben) + Ab-Montage (Utility-Meter) + Anzeigen
+# WICHTIG: Die MQTT-Discovery hat die Entität erzeugt: sensor.wasserzaehler_whg01_total
+# Alle Templates/Utility-Meter unten beziehen sich auf genau diese Entität.
+
+# ─────────────────────────────────────────────────────────────
+# Eingaben (Stammdaten optional) + Vor-Montage + Preis
+# ─────────────────────────────────────────────────────────────
+input_text:
+  whg01_wasser_kalt_meter_id:
+    name: "WHG01 – Wasser kalt: Meter-ID (optional)"
+    max: 32
+  whg01_wasser_kalt_meter_key:
+    name: "WHG01 – Wasser kalt: Meter-Key (optional)"
+    max: 64
+  whg01_wasser_kalt_hersteller:
+    name: "WHG01 – Wasser kalt: Hersteller/Typ (optional)"
+    max: 80
+  whg01_wasser_kalt_standort:
+    name: "WHG01 – Wasser kalt: Standort (optional)"
+    max: 80
+
+input_number:
+  whg01_wasser_alt_jahresanfang_m3:
+    name: "WHG01 – Wasser: Altzähler Stand 01.01. [m³]"
+    min: 0
+    max: 1000000
+    step: 0.001
+    mode: box
+    unit_of_measurement: "m³"
+
+  whg01_wasser_alt_demontage_m3:
+    name: "WHG01 – Wasser: Altzähler Stand Demontage [m³]"
+    min: 0
+    max: 1000000
+    step: 0.001
+    mode: box
+    unit_of_measurement: "m³"
+
+  whg01_wasser_preis_eur_m3:
+    name: "WHG01 – Wasserpreis [€/m³]"
+    min: 0
+    max: 100
+    step: 0.0001
+    mode: box
+    unit_of_measurement: "€/m³"
+
+# ─────────────────────────────────────────────────────────────
+# Utility-Meter: Verbräuche ab Montage aus der Discovery-Entität
+# ─────────────────────────────────────────────────────────────
+utility_meter:
+  whg01_wasser_m3_day:
+    name: "WHG01 – Wasser m³ heute"
+    source: sensor.wasserzaehler_whg01_total
+    cycle: daily
+  whg01_wasser_m3_month:
+    name: "WHG01 – Wasser m³ Monat"
+    source: sensor.wasserzaehler_whg01_total
+    cycle: monthly
+  whg01_wasser_m3_year:
+    name: "WHG01 – Wasser m³ Jahr"
+    source: sensor.wasserzaehler_whg01_total
+    cycle: yearly
+
+# ─────────────────────────────────────────────────────────────
+# Templates: Vor-Montage (m³/€), Ab-Montage (Jahr €), Jahr gesamt,
+# sowie Anzeigen/Status direkt aus den Attributen der Discovery-Entität
+# ─────────────────────────────────────────────────────────────
+template:
+  - sensor:
+      # Vor-Montage: Verbrauch (Demontage − Jahresanfang), nie negativ
+      - name: "WHG01 – Wasser vor Montage: Verbrauch [m³]"
+        unique_id: whg01_wasser_vormontage_verbrauch_m3
+        unit_of_measurement: "m³"
+        icon: mdi:water
+        state: >-
+          {% set a = states('input_number.whg01_wasser_alt_jahresanfang_m3')|float(0) %}
+          {% set b = states('input_number.whg01_wasser_alt_demontage_m3')|float(0) %}
+          {% set v = b - a %}
+          {{ (v if v >= 0 else 0) | round(3) }}
+
+      # Vor-Montage: Kosten = Verbrauch × Preis [€/m³]
+      - name: "WHG01 – Wasser vor Montage €"
+        unique_id: whg01_wasser_vormontage_kosten_eur
+        unit_of_measurement: "€"
+        icon: mdi:cash
+        state: >-
+          {% set a = states('input_number.whg01_wasser_alt_jahresanfang_m3')|float(0) %}
+          {% set b = states('input_number.whg01_wasser_alt_demontage_m3')|float(0) %}
+          {% set v = (b - a) if (b - a) >= 0 else 0 %}
+          {% set p = states('input_number.whg01_wasser_preis_eur_m3')|float(0) %}
+          {{ (v * p) | round(2) }}
+
+      # Ab Montage: Jahreskosten = Jahresverbrauch (Utility-Meter) × Preis [€/m³]
+      - name: "WHG01 – Wasser ab Montage (Jahr) €"
+        unique_id: whg01_wasser_kosten_ab_montage_eur
+        unit_of_measurement: "€"
+        icon: mdi:cash-multiple
+        state: >-
+          {{
+            (
+              states('sensor.whg01_wasser_m3_year')|float(0)
+              * states('input_number.whg01_wasser_preis_eur_m3')|float(0)
+            ) | round(2)
+          }}
+
+      # Jahr gesamt = Vor-Montage € + Ab-Montage € (Jahr)
+      - name: "WHG01 – Wasser Jahr gesamt €"
+        unique_id: whg01_wasser_kosten_jahr_gesamt_eur
+        unit_of_measurement: "€"
+        icon: mdi:calculator-variant
+        state: >-
+          {{
+            (
+              states('sensor.whg01_wasser_vormontage_kosten_eur')|float(0)
+              + states('sensor.whg01_wasser_kosten_ab_montage_eur')|float(0)
+            ) | round(2)
+          }}
+
+      # ───────── Stammdaten-/Status-Anzeigen (aus Discovery-Attributen) ─────────
+      # Zählernummer
+      - name: "whg01_wasser_zaehlernummer"
+        unique_id: whg01_wasser_zaehlernummer
+        state: "{{ state_attr('sensor.wasserzaehler_whg01_total','id') or 'unknown' }}"
+
+      # Medien-/Modellinfos (aus Attributen: media, meter, name)
+      - name: "whg01_wasser_media"
+        unique_id: whg01_wasser_media
+        state: "{{ state_attr('sensor.wasserzaehler_whg01_total','media') or 'unknown' }}"
+      - name: "whg01_wasser_modell"
+        unique_id: whg01_wasser_modell
+        state: "{{ state_attr('sensor.wasserzaehler_whg01_total','meter') or 'unknown' }}"
+      - name: "whg01_wasser_name_raw"
+        unique_id: whg01_wasser_name_raw
+        state: "{{ state_attr('sensor.wasserzaehler_whg01_total','name') or 'unknown' }}"
+
+      # Empfangspegel (dBm)
+      - name: "whg01_wasser_rssi_dbm"
+        unique_id: whg01_wasser_rssi_dbm
+        unit_of_measurement: "dBm"
+        state: "{{ state_attr('sensor.wasserzaehler_whg01_total','rssi_dbm') | default('unknown') }}"
+
+      # Letztes Telegramm (UTC ISO) & Gerätezeit im Zähler
+      - name: "whg01_wasser_telegramm_zeit"
+        unique_id: whg01_wasser_telegramm_zeit
+        device_class: timestamp
+        state: >-
+          {% set ts = state_attr('sensor.wasserzaehler_whg01_total','timestamp') %}
+          {{ ts if ts not in ['unknown','unavailable',None] else now().isoformat() }}
+
+      - name: "whg01_wasser_meter_datetime"
+        unique_id: whg01_wasser_meter_datetime
+        device_class: timestamp
+        state: >-
+          {% set dt = state_attr('sensor.wasserzaehler_whg01_total','meter_datetime') %}
+          {{ (dt ~ ':00') if dt not in ['unknown','unavailable',None] else now().isoformat() }}
+
+      # Spiegel des Totalstands + Verbrauch letzter Monat (aus history_1)
+      - name: "whg01_wasser_total_m3_spiegel"
+        unique_id: whg01_wasser_total_m3_spiegel
+        unit_of_measurement: "m³"
+        device_class: water
+        state_class: total_increasing
+        state: "{{ states('sensor.wasserzaehler_whg01_total') | float(0) }}"
+
+      - name: "whg01_wasser_letzter_monat_m3"
+        unique_id: whg01_wasser_letzter_monat_m3
+        unit_of_measurement: "m³"
+        icon: mdi:counter
+        availability: >-
+          {{ states('sensor.wasserzaehler_whg01_total') not in ['unknown','unavailable',''] and
+             state_attr('sensor.wasserzaehler_whg01_total','consumption_at_history_1_m3') not in [None,'unknown','unavailable'] }}
+        state: >-
+          {% set total = states('sensor.wasserzaehler_whg01_total') | float(0) %}
+          {% set h1 = state_attr('sensor.wasserzaehler_whg01_total','consumption_at_history_1_m3') | float(0) %}
+          {{ (total - h1) | round(3) }}
+        attributes:
+          seit: "{{ state_attr('sensor.wasserzaehler_whg01_total','history_1_date') }}"

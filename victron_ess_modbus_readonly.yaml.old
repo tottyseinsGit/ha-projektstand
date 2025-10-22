@@ -44,7 +44,6 @@ modbus:
         address: 2716
         input_type: holding
         data_type: int32
-        count: 2
         scale: 1
         precision: 0
         unit_of_measurement: "W"

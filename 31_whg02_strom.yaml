@@ -1,0 +1,155 @@
+# /config/packages/31_whg02_strom.yaml
+# WHG02 – Strom Haushalt (aufgeräumt & standardisiert)
+# - meter_id spiegelt sensor.whg02_strom_meter_serial (KEIN input_text für ID)
+# - Vor-Montage: (Demontage − Jahresanfang) × Durchschnittspreis
+# - Laufende Jahreskosten: Jahres-kWh (utility_meter) × Effektivpreis
+# - Gesamt Jahr = Vor-Montage € + Laufende Jahreskosten €
+
+# ─────────────────────────────────────────────────────────────
+# Stammdaten (ohne meter_id – kommt aus dem Serial-Sensor)
+# ─────────────────────────────────────────────────────────────
+input_text:
+  whg02_strom_meter_key:  { name: "WHG02 – Strom Haushalt: Schlüssel (optional)", max: 64 }
+  whg02_strom_hersteller: { name: "WHG02 – Strom Haushalt: Hersteller/Typ", max: 80 }
+  whg02_strom_standort:   { name: "WHG02 – Strom Haushalt: Standort", max: 80 }
+
+# ─────────────────────────────────────────────────────────────
+# Parameter: Eichfrist, Preise & Altzählerstände
+# ─────────────────────────────────────────────────────────────
+input_number:
+  whg02_strom_eichfrist_jahre:
+    name: "WHG02 – Strom Haushalt: Eichfrist [Jahre]"
+    min: 1
+    max: 20
+    step: 1
+    mode: box
+    initial: 8
+
+  # Durchschnittspreis für Vor-Montage (Altzähler-Abrechnung)
+  whg02_strom_preis_eur_kwh:
+    name: "WHG02 – Strompreis (Durchschnitt) [€/kWh] – Vor Montage"
+    min: 0
+    max: 2
+    step: 0.0001
+    mode: box
+
+  # Altzählerstände (Demontage − Jahresanfang = Verbrauch vor Montage)
+  whg02_strom_alt_jahresanfang_kwh:
+    name: "WHG02 – Altzähler: Stand 01.01. [kWh]"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+
+  whg02_strom_alt_demontage_kwh:
+    name: "WHG02 – Altzähler: Stand Demontage [kWh]"
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+
+# ─────────────────────────────────────────────────────────────
+# Montagedatum (für Eichfrist-Berechnung)
+# ─────────────────────────────────────────────────────────────
+input_datetime:
+  whg02_strom_montage:
+    has_date: true
+
+# ─────────────────────────────────────────────────────────────
+# Utility-Meter (Quelle = Gesamt-kWh Sensor)
+# → Falls dein Total-Zähler anders heißt, HIER anpassen:
+#     source: sensor.whg02_strom_kwh_total
+# ─────────────────────────────────────────────────────────────
+utility_meter:
+  whg02_strom_kwh_day:
+    name: "WHG02 – Strom Haushalt kWh heute"
+    source: sensor.whg02_strom_kwh_total
+    cycle: daily
+  whg02_strom_kwh_month:
+    name: "WHG02 – Strom Haushalt kWh Monat"
+    source: sensor.whg02_strom_kwh_total
+    cycle: monthly
+  whg02_strom_kwh_year:
+    name: "WHG02 – Strom Haushalt kWh Jahr"
+    source: sensor.whg02_strom_kwh_total
+    cycle: yearly
+
+# ─────────────────────────────────────────────────────────────
+# Templates: Zähler-ID (aus Serial), Eichfrist, Vor-Montage & Kosten
+# ─────────────────────────────────────────────────────────────
+template:
+  - sensor:
+      # 1) Zähler-ID: direkter Spiegel des MQTT-Seriennummern-Sensors
+      - name: whg02_strom_meter_id
+        unique_id: whg02_strom_meter_id
+        icon: mdi:numeric
+        state: >-
+          {% set s = states('sensor.whg02_strom_meter_serial') %}
+          {{ s if s not in ['unknown','unavailable','', 'none', None] else none }}
+
+      # 2) Ablauf der Eichfrist (Montagedatum + Jahre)
+      - name: whg02_strom_eich_ablauf
+        unique_id: whg02_strom_eich_ablauf
+        device_class: timestamp
+        state: >-
+          {% set d = states('input_datetime.whg02_strom_montage') %}
+          {% set y = states('input_number.whg02_strom_eichfrist_jahre')|int(8) %}
+          {% if d not in ['unknown','unavailable',''] and y > 0 %}
+            {% set base = as_datetime(d) %}
+            {{ as_local(base.replace(year=base.year + y)).isoformat() }}
+          {% else %} {{ none }} {% endif %}
+
+      # 3) Vor-Montage: Verbrauch (Demontage − Jahresanfang), nie negativ
+      - name: "WHG02 – Strom vor Montage: Verbrauch [kWh]"
+        unique_id: whg02_strom_vormontage_verbrauch_kwh
+        unit_of_measurement: "kWh"
+        state: >-
+          {% set a = states('input_number.whg02_strom_alt_jahresanfang_kwh')|float(0) %}
+          {% set b = states('input_number.whg02_strom_alt_demontage_kwh')|float(0) %}
+          {% set v = (b - a) %}
+          {{ (v if v >= 0 else 0) | round(2) }}
+
+      # 4) Vor-Montage: Kosten = Verbrauch × Durchschnittspreis
+      - name: "WHG02 – Strom vor Montage €"
+        unique_id: whg02_strom_vormontage_kosten_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash
+        state: >-
+          {{
+            (
+              states('sensor.whg02_strom_vormontage_verbrauch_kwh')|float(0)
+              * states('input_number.whg02_strom_preis_eur_kwh')|float(0)
+            ) | round(2)
+          }}
+
+      # 5) Laufende Jahreskosten (Schnappschuss): Jahres-kWh × Effektivpreis
+      #    → nutzt deinen Tarif-/Effektivpreis-Sensor (bei dir ggf. vorhanden)
+      - name: "WHG02 – Strom ab Montage (Jahr) €"
+        unique_id: whg02_strom_kosten_ab_montage_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash-multiple
+        state: >-
+          {{
+            (
+              states('sensor.whg02_strom_kwh_year')|float(0)
+              * states('sensor.strom_preis_eur_kwh_eff')|float(0)
+            ) | round(2)
+          }}
+
+      # 6) Jahr gesamt = Vor-Montage € + Laufende Jahreskosten €
+      - name: "WHG02 – Strom Jahr gesamt (vor Montage + ab Montage) €"
+        unique_id: whg02_strom_kosten_jahr_gesamt_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:calculator-variant
+        state: >-
+          {{
+            (
+              states('sensor.whg02_strom_vormontage_kosten_eur')|float(0)
+              + states('sensor.whg02_strom_kosten_ab_montage_eur')|float(0)
+            ) | round(2)
+          }}
+
+  

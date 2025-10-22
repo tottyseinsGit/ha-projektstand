@@ -161,26 +161,7 @@ template:
           {% else %}
             {{ none }}
           {% endif %}
-
-# ───────────────────────────────────────────────────────────────────────────────
-# MQTT → WaterStar M (wmbusmeters)
-# ───────────────────────────────────────────────────────────────────────────────
-mqtt:
-  sensor:
-    - name: "whg01_wasser_total_m3"
-      unique_id: whg01_wasser_total_m3
-      state_topic: "wmbusmeters/Wasserzaehler_Whg01"
-      value_template: "{{ value_json.total_m3 | float(0) }}"
-      unit_of_measurement: "m³"
-      device_class: water
-      state_class: total_increasing
-      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01"
-
-# ───────────────────────────────────────────────────────────────────────────────
-# Abgeleitete Anzeige-Felder (aus den MQTT-Attributen)
-# ───────────────────────────────────────────────────────────────────────────────
-template:
-  - sensor:
+      
       # Zählernummer (aus JSON id)
       - name: "whg01_wasser_zaehlernummer"
         unique_id: whg01_wasser_zaehlernummer
@@ -244,3 +225,20 @@ template:
           {{ (total - h1) | round(3) }}
         attributes:
           seit: "{{ state_attr('sensor.whg01_wasser_total_m3','history_1_date') }}"
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# MQTT → WaterStar M (wmbusmeters)
+# ───────────────────────────────────────────────────────────────────────────────
+mqtt:
+  sensor:
+    - name: "whg01_wasser_total_m3"
+      unique_id: whg01_wasser_total_m3
+      state_topic: "wmbusmeters/Wasserzaehler_Whg01"
+      value_template: "{{ value_json.total_m3 | float(0) }}"
+      unit_of_measurement: "m³"
+      device_class: water
+      state_class: total_increasing
+      json_attributes_topic: "wmbusmeters/Wasserzaehler_Whg01"
+
+

@@ -45,4 +45,9 @@ template:
         state: >-
           {% set base  = states('input_number.whg01_wasser_warm_vormontage_m3') | replace(',', '.') | float(0) %}
           {% set total = states('sensor.whg01_wasserzaehler_total_m3_warm')     | replace(',', '.') | float(0) %}
+
+
+
+
+
           {{ (base + total) | round(3) }}
