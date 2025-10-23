@@ -1,0 +1,102 @@
+# /config/packages/33_evcharger_strom_kosten.yaml
+# EV Charger – Verbrauch (kWh) und Kosten (€) inkl. Vormontage + Live-Preis
+
+input_number:
+  ev_charger_vormontage_kwh:
+    name: "EV Charger – Vormontage [kWh]"
+    min: 0
+    max: 100000
+    step: 0.1
+    unit_of_measurement: "kWh"
+    mode: box
+  ev_charger_vormontage_preis_eur_kwh:
+    name: "EV Charger – Vormontage Preis [€/kWh]"
+    min: 0
+    max: 5
+    step: 0.001
+    unit_of_measurement: "€/kWh"
+    mode: box
+
+template:
+  - trigger:
+      - platform: state
+        entity_id:
+          - sensor.homeassistant_zgw16_ip_total_active_power_2   # EV-Charger Leistung (W)
+          - sensor.conny_strompreis                              # Preis (€/kWh)
+      - platform: time_pattern
+        seconds: "/30"
+    sensor:
+      - name: "EV Charger – Kostenrate [€/h]"
+        unique_id: ev_charger_kostenrate_eur_h
+        unit_of_measurement: "€/h"
+        icon: mdi:cash
+        state: >-
+          {% set p_w = states('sensor.homeassistant_zgw16_ip_total_active_power_2')|float(0) %}
+          {% set price = states('sensor.conny_strompreis')|float(0) %}
+          {{ ((p_w / 1000.0) * price) | round(6) }}
+
+  - sensor:
+      - name: "EV Charger – Strom Verbrauch [kWh]"
+        unique_id: ev_charger_strom_verbrauch_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >-
+          {{ ( states('sensor.ev_charger_strom_verbrauch_kwh_raw')|float(0)
+             + states('input_number.ev_charger_vormontage_kwh')|float(0) ) | round(3) }}
+
+      - name: "EV Charger – Strom Vormontage €"
+        unique_id: ev_charger_strom_vormontage_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash
+        state: >-
+          {{ ( states('input_number.ev_charger_vormontage_kwh')|float(0)
+             * states('input_number.ev_charger_vormontage_preis_eur_kwh')|float(0) ) | round(2) }}
+
+      - name: "EV Charger – Strom Kosten gesamt €"
+        unique_id: ev_charger_strom_kosten_gesamt_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash-multiple
+        state: >-
+          {{ ( states('sensor.ev_charger_kosten_eur_raw')|float(0)
+             + states('sensor.ev_charger_strom_vormontage_eur')|float(0) ) | round(2) }}
+
+sensor:
+  - platform: integration
+    source: sensor.homeassistant_zgw16_ip_total_active_power_2
+    name: ev_charger_strom_verbrauch_kwh_raw
+    unit_time: h
+    unit_prefix: k
+    method: trapezoidal
+    round: 6
+
+  - platform: integration
+    source: sensor.ev_charger_kostenrate_eur_h
+    name: ev_charger_kosten_eur_raw
+    unit_time: h
+    unit_prefix: null
+    method: trapezoidal
+    round: 6
+
+utility_meter:
+  ev_charger_kosten_tag:
+    source: sensor.ev_charger_kosten_eur_raw
+    cycle: daily
+  ev_charger_kosten_monat:
+    source: sensor.ev_charger_kosten_eur_raw
+    cycle: monthly
+  ev_charger_kosten_jahr:
+    source: sensor.ev_charger_kosten_eur_raw
+    cycle: yearly
+
+  ev_charger_verbrauch_tag_kwh:
+    source: sensor.ev_charger_strom_verbrauch_kwh
+    cycle: daily
+  ev_charger_verbrauch_monat_kwh:
+    source: sensor.ev_charger_strom_verbrauch_kwh
+    cycle: monthly
+  ev_charger_verbrauch_jahr_kwh:
+    source: sensor.ev_charger_strom_verbrauch_kwh
+    cycle: yearly

@@ -1,8 +1,20 @@
-# /config/packages/31_victron_energy_extensions.yaml
-# Ergänzungen für Victron: PV-Ertrag, Netzbezug/-einspeisung, Kosten/Einnahmen, Preis-gesteuertes Laden
+# /config/packages/victron_unit100_basic.yaml
+# Victron Unit 100 – Basis: PV-Ertrag (kWh), Netz Import/Export (kWh), Kosten/Einnahmen (€),
+# und Hilfsgrößen für preisgesteuertes Laden. Energy-Dashboard-kompatibel.
+#
+# HINWEIS:
+# - Diese Datei entspricht inhaltlich deiner verlinkten Version, ist aber korrekt formatiert (Zeilen/Einrückung).
+# - Die Sensoren „PV – Ertrag (DC) [kWh]“, „Netzbezug [kWh]“, „Netzeinspeisung [kWh]“ sind für das Energy-Dashboard nutzbar.
+# - Preis-Sensor: sensor.conny_strompreis (€/kWh). Einspeisevergütung per input_number.
+#
+# Voraussetzungen: Vorher definierte Basis-Sensoren
+#   - sensor.victron_sys_pv_dc_coupled_w            (PV-DC Leistung W)
+#   - sensor.victron_sys_grid_total_w               (Netzleistung +Bezug / −Einspeisung, W)
+#   - sensor.victron_sys_battery_soc_percent        (SOC %)
+#   - Modbus-Hub „victron“ (für Setpoint-Number)
 
 sensor:
-  # PV DC -> kWh (Ertrag)
+  # --- PV DC -> kWh (Ertrag) ---
   - platform: integration
     source: sensor.victron_sys_pv_dc_coupled_w
     name: victron_pv_dc_yield_kwh_raw
@@ -11,7 +23,7 @@ sensor:
     method: trapezoidal
     round: 3
 
-  # Netz Import/Export kWh
+  # --- Netz Import/Export kWh (aus aufgeteilten W-Signalen) ---
   - platform: integration
     source: sensor.victron_sys_grid_import_w
     name: victron_grid_import_kwh_raw
@@ -19,6 +31,7 @@ sensor:
     unit_prefix: k
     method: trapezoidal
     round: 3
+
   - platform: integration
     source: sensor.victron_sys_grid_export_w
     name: victron_grid_export_kwh_raw
@@ -27,13 +40,14 @@ sensor:
     method: trapezoidal
     round: 3
 
-  # Kosten/Einnahmen integrieren
+  # --- Kosten/Einnahmen integrieren (€) ---
   - platform: integration
     source: sensor.strom_kostenrate_import_eur_h
     name: strom_kosten_import_eur_raw
     unit_time: h
     method: trapezoidal
     round: 4
+
   - platform: integration
     source: sensor.strom_einnahmerate_export_eur_h
     name: strom_einnahmen_export_eur_raw
@@ -43,6 +57,7 @@ sensor:
 
 template:
   - sensor:
+      # --- PV-Ertrag kWh (sichtbar fürs Energy-Dashboard) ---
       - name: "PV – Ertrag (DC) [kWh]"
         unique_id: pv_ertrag_dc_kwh
         unit_of_measurement: "kWh"
@@ -50,7 +65,7 @@ template:
         state_class: total_increasing
         state: "{{ states('sensor.victron_pv_dc_yield_kwh_raw')|float(0)|round(3) }}"
 
-      # Netz Import/Export (W) aufteilen
+      # --- Netz Import/Export (W) aufteilen ---
       - name: victron_sys_grid_import_w
         unique_id: victron_sys_grid_import_w
         unit_of_measurement: "W"
@@ -59,6 +74,7 @@ template:
         state: >-
           {% set g = states('sensor.victron_sys_grid_total_w')|float(0) %}
           {{ max(0, g) }}
+
       - name: victron_sys_grid_export_w
         unique_id: victron_sys_grid_export_w
         unit_of_measurement: "W"
@@ -68,13 +84,14 @@ template:
           {% set g = states('sensor.victron_sys_grid_total_w')|float(0) %}
           {{ max(0, -g) }}
 
-      # Abgeleitete kWh-Summen (sichtbar fürs Dashboard)
+      # --- Abgeleitete kWh-Summen (sichtbar fürs Dashboard) ---
       - name: "Netzbezug [kWh]"
         unique_id: grid_import_kwh
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total_increasing
         state: "{{ states('sensor.victron_grid_import_kwh_raw')|float(0)|round(3) }}"
+
       - name: "Netzeinspeisung [kWh]"
         unique_id: grid_export_kwh
         unit_of_measurement: "kWh"
@@ -82,7 +99,7 @@ template:
         state_class: total_increasing
         state: "{{ states('sensor.victron_grid_export_kwh_raw')|float(0)|round(3) }}"
 
-      # €-Raten
+      # --- €-Raten (Import/Einspeisung) ---
       - name: "Strom Kostenrate Import [€/h]"
         unique_id: strom_kostenrate_import_eur_h
         unit_of_measurement: "€/h"
@@ -91,6 +108,7 @@ template:
           {% set p = states('sensor.victron_sys_grid_import_w')|float(0) %}
           {% set price = states('sensor.conny_strompreis')|float(0) %}
           {{ ((p/1000.0) * price) | round(6) }}
+
       - name: "Strom Einnahmerate Export [€/h]"
         unique_id: strom_einnahmerate_export_eur_h
         unit_of_measurement: "€/h"
@@ -101,6 +119,7 @@ template:
           {{ ((p/1000.0) * fit) | round(6) }}
 
   - binary_sensor:
+      # --- Preisgesteuertes Laden: Bedingung ---
       - name: "Akku – jetzt günstig laden"
         unique_id: akku_jetzt_guenstig_laden
         state: >-
@@ -108,6 +127,7 @@ template:
              and states('sensor.victron_sys_battery_soc_percent')|float(0) < states('input_number.target_soc_percent')|float(60) }}
 
   - sensor:
+      # --- Hilfssensor: Energie bis Ziel-SOC ---
       - name: "Akku – Energie bis Ziel [kWh]"
         unique_id: akku_energy_to_target_kwh
         unit_of_measurement: "kWh"
@@ -119,6 +139,7 @@ template:
           {{ (need if need > 0 else 0) | round(2) }}
 
 utility_meter:
+  # --- PV Ertrag (kWh) ---
   pv_dc_ertrag_tag:
     source: sensor.pv_ertrag_dc_kwh
     cycle: daily
@@ -129,6 +150,7 @@ utility_meter:
     source: sensor.pv_ertrag_dc_kwh
     cycle: yearly
 
+  # --- Netz kWh ---
   grid_import_tag:
     source: sensor.grid_import_kwh
     cycle: daily
@@ -149,6 +171,7 @@ utility_meter:
     source: sensor.grid_export_kwh
     cycle: yearly
 
+  # --- Kosten/Einnahmen (€) ---
   kosten_import_tag:
     source: sensor.strom_kosten_import_eur_raw
     cycle: daily
@@ -170,6 +193,7 @@ utility_meter:
     cycle: yearly
 
 input_number:
+  # --- Vergütung und Preis-/SOC-Ziele ---
   einspeiseverguetung_eur_kwh:
     name: "Einspeisevergütung [€/kWh]"
     min: 0
@@ -177,18 +201,21 @@ input_number:
     step: 0.001
     unit_of_measurement: "€/kWh"
     mode: box
+
   price_threshold_eur_kwh:
     name: "Preis-Schwelle [€/kWh]"
     min: 0
     max: 1
     step: 0.005
     unit_of_measurement: "€/kWh"
+
   target_soc_percent:
     name: "Ziel-SOC [%]"
     min: 10
     max: 100
     step: 1
     unit_of_measurement: "%"
+
   battery_capacity_kwh:
     name: "Batteriekapazität [kWh]"
     min: 1
@@ -197,12 +224,13 @@ input_number:
     unit_of_measurement: "kWh"
 
 number:
+  # --- ESS Grid-Setpoint (schreibbar) ---
   - platform: modbus
     name: victron_ess_grid_setpoint_cmd_w
     unique_id: victron_ess_grid_setpoint_cmd_w
     hub: victron
     slave: 100
-    address: 2716
+    address: 2716     # ggf. 2700 (int16) bei älterer Firmware
     data_type: int32
     min_value: -10000
     max_value: 10000
