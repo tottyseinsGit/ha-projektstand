@@ -1,287 +1,210 @@
-homeassistant:
-  customize: {}
+# /config/packages/31_victron_energy_extensions.yaml
+# Ergänzungen für Victron: PV-Ertrag, Netzbezug/-einspeisung, Kosten/Einnahmen, Preis-gesteuertes Laden
 
-modbus:
-  - name: victron
-    type: tcp
-    host: 192.168.178.26
-    port: 502
-    delay: 1
-    timeout: 5
-    message_wait_milliseconds: 50
+sensor:
+  # PV DC -> kWh (Ertrag)
+  - platform: integration
+    source: sensor.victron_sys_pv_dc_coupled_w
+    name: victron_pv_dc_yield_kwh_raw
+    unique_id: victron_pv_dc_yield_kwh_raw
+    unit_prefix: k
+    method: trapezoidal
+    round: 3
 
-    sensors:
-      # --- AC-Verbrauch pro Phase (W) ---
-      - name: victron_sys_ac_consumption_l1_w
-        unique_id: victron_sys_ac_consumption_l1_w
-        slave: 100
-        address: 817
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
+  # Netz Import/Export kWh
+  - platform: integration
+    source: sensor.victron_sys_grid_import_w
+    name: victron_grid_import_kwh_raw
+    unique_id: victron_grid_import_kwh_raw
+    unit_prefix: k
+    method: trapezoidal
+    round: 3
+  - platform: integration
+    source: sensor.victron_sys_grid_export_w
+    name: victron_grid_export_kwh_raw
+    unique_id: victron_grid_export_kwh_raw
+    unit_prefix: k
+    method: trapezoidal
+    round: 3
 
-      - name: victron_sys_ac_consumption_l2_w
-        unique_id: victron_sys_ac_consumption_l2_w
-        slave: 100
-        address: 818
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_sys_ac_consumption_l3_w
-        unique_id: victron_sys_ac_consumption_l3_w
-        slave: 100
-        address: 819
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      # --- Netzleistung pro Phase (W): +Bezug / −Einspeisung ---
-      - name: victron_sys_grid_l1_w
-        unique_id: victron_sys_grid_l1_w
-        slave: 100
-        address: 820
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_sys_grid_l2_w
-        unique_id: victron_sys_grid_l2_w
-        slave: 100
-        address: 821
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_sys_grid_l3_w
-        unique_id: victron_sys_grid_l3_w
-        slave: 100
-        address: 822
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      # --- Batterie (System aggregiert) ---
-      - name: victron_sys_battery_voltage_v
-        unique_id: victron_sys_battery_voltage_v
-        slave: 100
-        address: 840
-        input_type: holding
-        data_type: uint16
-        scale: 0.1
-        precision: 1
-        unit_of_measurement: "V"
-        device_class: voltage
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_sys_battery_current_a
-        unique_id: victron_sys_battery_current_a
-        slave: 100
-        address: 841
-        input_type: holding
-        data_type: int16
-        scale: 0.1
-        precision: 1
-        unit_of_measurement: "A"
-        device_class: current
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_sys_battery_power_w
-        unique_id: victron_sys_battery_power_w
-        slave: 100
-        address: 842
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_sys_battery_soc_percent
-        unique_id: victron_sys_battery_soc_percent
-        slave: 100
-        address: 843
-        input_type: holding
-        data_type: uint16
-        unit_of_measurement: "%"
-        device_class: battery
-        state_class: measurement
-        scan_interval: 15
-
-      - name: victron_sys_battery_state_raw
-        unique_id: victron_sys_battery_state_raw
-        slave: 100
-        address: 844
-        input_type: holding
-        data_type: uint16
-        scan_interval: 10
-
-      # --- PV (DC-gekoppelt, Summe) ---
-      - name: victron_sys_pv_dc_coupled_w
-        unique_id: victron_sys_pv_dc_coupled_w
-        slave: 100
-        address: 850
-        input_type: holding
-        data_type: uint16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      # --- Ladegerät-/DC-Systemleistung (optional) ---
-      - name: victron_sys_charger_power_w
-        unique_id: victron_sys_charger_power_w
-        slave: 100
-        address: 855
-        input_type: holding
-        data_type: uint16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 10
-
-      - name: victron_sys_dc_system_power_w
-        unique_id: victron_sys_dc_system_power_w
-        slave: 100
-        address: 860
-        input_type: holding
-        data_type: int16
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 10
-
-      # --- ESS Grid-Setpoint (nur LESEN) ---
-      - name: victron_ess_grid_setpoint_w_32
-        unique_id: victron_ess_grid_setpoint_w_32
-        slave: 100
-        address: 2716
-        input_type: holding
-        data_type: int32      # ab neueren VenusOS-Versionen
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
-
-      - name: victron_ess_grid_setpoint_w_legacy
-        unique_id: victron_ess_grid_setpoint_w_legacy
-        slave: 100
-        address: 2700
-        input_type: holding
-        data_type: int16      # ältere Firmware
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        scan_interval: 5
+  # Kosten/Einnahmen integrieren
+  - platform: integration
+    source: sensor.strom_kostenrate_import_eur_h
+    name: strom_kosten_import_eur_raw
+    unit_time: h
+    method: trapezoidal
+    round: 4
+  - platform: integration
+    source: sensor.strom_einnahmerate_export_eur_h
+    name: strom_einnahmen_export_eur_raw
+    unit_time: h
+    method: trapezoidal
+    round: 4
 
 template:
   - sensor:
-      # Summen
-      - name: victron_sys_ac_consumption_total_w
-        unique_id: victron_sys_ac_consumption_total_w
+      - name: "PV – Ertrag (DC) [kWh]"
+        unique_id: pv_ertrag_dc_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.victron_pv_dc_yield_kwh_raw')|float(0)|round(3) }}"
+
+      # Netz Import/Export (W) aufteilen
+      - name: victron_sys_grid_import_w
+        unique_id: victron_sys_grid_import_w
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        state: >
-          {% set l1 = states('sensor.victron_sys_ac_consumption_l1_w')|int(0) %}
-          {% set l2 = states('sensor.victron_sys_ac_consumption_l2_w')|int(0) %}
-          {% set l3 = states('sensor.victron_sys_ac_consumption_l3_w')|int(0) %}
-          {{ l1 + l2 + l3 }}
-
-      - name: victron_sys_grid_total_w
-        unique_id: victron_sys_grid_total_w
+        state: >-
+          {% set g = states('sensor.victron_sys_grid_total_w')|float(0) %}
+          {{ max(0, g) }}
+      - name: victron_sys_grid_export_w
+        unique_id: victron_sys_grid_export_w
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        state: >
-          {% set g1 = states('sensor.victron_sys_grid_l1_w')|int(0) %}
-          {% set g2 = states('sensor.victron_sys_grid_l2_w')|int(0) %}
-          {% set g3 = states('sensor.victron_sys_grid_l3_w')|int(0) %}
-          {{ g1 + g2 + g3 }}
+        state: >-
+          {% set g = states('sensor.victron_sys_grid_total_w')|float(0) %}
+          {{ max(0, -g) }}
 
-      # Batterieleistung aufteilen (nie negativ):
-      # Annahme: victron_sys_battery_power_w >0 = Laden, <0 = Entladen
-      - name: victron_sys_battery_charge_w
-        unique_id: victron_sys_battery_charge_w
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        state: >
-          {% set p = states('sensor.victron_sys_battery_power_w')|float(0) %}
-          {{ max(0, p) }}
+      # Abgeleitete kWh-Summen (sichtbar fürs Dashboard)
+      - name: "Netzbezug [kWh]"
+        unique_id: grid_import_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.victron_grid_import_kwh_raw')|float(0)|round(3) }}"
+      - name: "Netzeinspeisung [kWh]"
+        unique_id: grid_export_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.victron_grid_export_kwh_raw')|float(0)|round(3) }}"
 
-      - name: victron_sys_battery_discharge_w
-        unique_id: victron_sys_battery_discharge_w
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        state: >
-          {% set p = states('sensor.victron_sys_battery_power_w')|float(0) %}
-          {{ max(0, -p) }}
+      # €-Raten
+      - name: "Strom Kostenrate Import [€/h]"
+        unique_id: strom_kostenrate_import_eur_h
+        unit_of_measurement: "€/h"
+        icon: mdi:currency-eur
+        state: >-
+          {% set p = states('sensor.victron_sys_grid_import_w')|float(0) %}
+          {% set price = states('sensor.conny_strompreis')|float(0) %}
+          {{ ((p/1000.0) * price) | round(6) }}
+      - name: "Strom Einnahmerate Export [€/h]"
+        unique_id: strom_einnahmerate_export_eur_h
+        unit_of_measurement: "€/h"
+        icon: mdi:cash-plus
+        state: >-
+          {% set p = states('sensor.victron_sys_grid_export_w')|float(0) %}
+          {% set fit = states('input_number.einspeiseverguetung_eur_kwh')|float(0) %}
+          {{ ((p/1000.0) * fit) | round(6) }}
 
-      # ESS-Setpoint vereinheitlicht (nimmt 32-bit wenn vorhanden)
-      - name: victron_ess_grid_setpoint_w
-        unique_id: victron_ess_grid_setpoint_w
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        state: >
-          {% set n = states('sensor.victron_ess_grid_setpoint_w_32') %}
-          {% if n not in ['unknown','unavailable',''] %}
-            {{ n }}
-          {% else %}
-            {{ states('sensor.victron_ess_grid_setpoint_w_legacy') }}
-          {% endif %}
+  - binary_sensor:
+      - name: "Akku – jetzt günstig laden"
+        unique_id: akku_jetzt_guenstig_laden
+        state: >-
+          {{ states('sensor.conny_strompreis')|float(10) <= states('input_number.price_threshold_eur_kwh')|float(0.25)
+             and states('sensor.victron_sys_battery_soc_percent')|float(0) < states('input_number.target_soc_percent')|float(60) }}
 
-# --- W -> kWh integrieren (für das Energie-Dashboard, Batterie LADEN/ENTLADEN) ---
-sensor:
-  - platform: integration
-    source: sensor.victron_sys_battery_charge_w
-    name: victron_battery_charged_energy_kwh
-    unique_id: victron_battery_charged_energy_kwh
-    unit_prefix: k
-    method: left
-    round: 3
+  - sensor:
+      - name: "Akku – Energie bis Ziel [kWh]"
+        unique_id: akku_energy_to_target_kwh
+        unit_of_measurement: "kWh"
+        state: >-
+          {% set cap = states('input_number.battery_capacity_kwh')|float(0) %}
+          {% set soc = states('sensor.victron_sys_battery_soc_percent')|float(0) %}
+          {% set tgt = states('input_number.target_soc_percent')|float(0) %}
+          {% set need = ((tgt - soc)/100) * cap %}
+          {{ (need if need > 0 else 0) | round(2) }}
 
-  - platform: integration
-    source: sensor.victron_sys_battery_discharge_w
-    name: victron_battery_discharged_energy_kwh
-    unique_id: victron_battery_discharged_energy_kwh
-    unit_prefix: k
-    method: left
-    round: 3
-
-# (optional) Tages-/Monatszähler
 utility_meter:
-  battery_charged_daily:
-    source: sensor.victron_battery_charged_energy_kwh
+  pv_dc_ertrag_tag:
+    source: sensor.pv_ertrag_dc_kwh
     cycle: daily
-  battery_discharged_daily:
-    source: sensor.victron_battery_discharged_energy_kwh
+  pv_dc_ertrag_monat:
+    source: sensor.pv_ertrag_dc_kwh
+    cycle: monthly
+  pv_dc_ertrag_jahr:
+    source: sensor.pv_ertrag_dc_kwh
+    cycle: yearly
+
+  grid_import_tag:
+    source: sensor.grid_import_kwh
     cycle: daily
-  battery_charged_monthly:
-    source: sensor.victron_battery_charged_energy_kwh
+  grid_import_monat:
+    source: sensor.grid_import_kwh
     cycle: monthly
-  battery_discharged_monthly:
-    source: sensor.victron_battery_discharged_energy_kwh
+  grid_import_jahr:
+    source: sensor.grid_import_kwh
+    cycle: yearly
+
+  grid_export_tag:
+    source: sensor.grid_export_kwh
+    cycle: daily
+  grid_export_monat:
+    source: sensor.grid_export_kwh
     cycle: monthly
+  grid_export_jahr:
+    source: sensor.grid_export_kwh
+    cycle: yearly
+
+  kosten_import_tag:
+    source: sensor.strom_kosten_import_eur_raw
+    cycle: daily
+  kosten_import_monat:
+    source: sensor.strom_kosten_import_eur_raw
+    cycle: monthly
+  kosten_import_jahr:
+    source: sensor.strom_kosten_import_eur_raw
+    cycle: yearly
+
+  einnahmen_export_tag:
+    source: sensor.strom_einnahmen_export_eur_raw
+    cycle: daily
+  einnahmen_export_monat:
+    source: sensor.strom_einnahmen_export_eur_raw
+    cycle: monthly
+  einnahmen_export_jahr:
+    source: sensor.strom_einnahmen_export_eur_raw
+    cycle: yearly
+
+input_number:
+  einspeiseverguetung_eur_kwh:
+    name: "Einspeisevergütung [€/kWh]"
+    min: 0
+    max: 0.6
+    step: 0.001
+    unit_of_measurement: "€/kWh"
+    mode: box
+  price_threshold_eur_kwh:
+    name: "Preis-Schwelle [€/kWh]"
+    min: 0
+    max: 1
+    step: 0.005
+    unit_of_measurement: "€/kWh"
+  target_soc_percent:
+    name: "Ziel-SOC [%]"
+    min: 10
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+  battery_capacity_kwh:
+    name: "Batteriekapazität [kWh]"
+    min: 1
+    max: 50
+    step: 0.1
+    unit_of_measurement: "kWh"
+
+number:
+  - platform: modbus
+    name: victron_ess_grid_setpoint_cmd_w
+    unique_id: victron_ess_grid_setpoint_cmd_w
+    hub: victron
+    slave: 100
+    address: 2716
+    data_type: int32
+    min_value: -10000
+    max_value: 10000
+    step: 50
+    unit_of_measurement: "W"
