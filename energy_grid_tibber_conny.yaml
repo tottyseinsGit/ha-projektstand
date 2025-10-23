@@ -1,0 +1,39 @@
+homeassistant:
+  customize: {}
+
+# (optional) kleine Schutz-Templates, falls mal negative Störwerte auftauchen
+template:
+  - sensor:
+      - name: grid_import_power_w
+        unique_id: grid_import_power_w_conny
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ max(0, states('sensor.tibber_pulse_conny_leistung')|float(0)) }}
+
+      - name: grid_export_power_w
+        unique_id: grid_export_power_w_conny
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ max(0, states('sensor.tibber_pulse_conny_einspeiseleistung')|float(0)) }}
+
+# W -> kWh integrieren (für das Energy-Dashboard)
+sensor:
+  - platform: integration
+    source: sensor.grid_import_power_w          # nutzt das Template oben
+    name: grid_import_energy_kwh
+    unique_id: grid_import_energy_kwh_conny
+    unit_prefix: k
+    method: left
+    round: 3
+
+  - platform: integration
+    source: sensor.grid_export_power_w
+    name: grid_export_energy_kwh
+    unique_id: grid_export_energy_kwh_conny
+    unit_prefix: k
+    method: left
+    round: 3

@@ -134,7 +134,7 @@ template:
           {{
             (
               states('sensor.whg02_strom_kwh_year')|float(0)
-              * states('sensor.strom_preis_eur_kwh_eff')|float(0)
+              * states('sensor.conny_strompreis')|float(0)
             ) | round(2)
           }}
 

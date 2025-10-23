@@ -1,34 +1,206 @@
 # /config/packages/31_zaehler_haus_wp_strom.yaml
-# Haus – Wärmepumpe: Strom (jahresneutral)
+# Haus: Wärmepumpe & Allgemein – Verbrauch (kWh) und Kosten (€) inkl. Vormontage + Live-Preis
 
-utility_meter:
-  haus_strom_wp_kwh_year:
-    name: "Haus – WP Strom: Jahr"
-    source: sensor.zaehler_xiao_c6_wp_zahlerstand_gesamt_kwh   # ← Quelle bei dir vorhanden
-    cycle: yearly
-
+# ───────── Eingaben: Vormontage (kWh & Preis €/kWh) ─────────
 input_number:
-  haus_strom_wp_vormontage_kwh:
+  haus_wp_vormontage_kwh:
     name: "Haus – WP Strom: Vormontage [kWh]"
     min: 0
     max: 100000
     step: 0.1
-    mode: box
     unit_of_measurement: "kWh"
+    mode: box
+  haus_wp_vormontage_preis_eur_kwh:
+    name: "Haus – WP Strom: Vormontage Preis [€/kWh]"
+    min: 0
+    max: 5
+    step: 0.001
+    unit_of_measurement: "€/kWh"
+    mode: box
 
+  haus_allg_vormontage_kwh:
+    name: "Haus – Allgemein Strom: Vormontage [kWh]"
+    min: 0
+    max: 100000
+    step: 0.1
+    unit_of_measurement: "kWh"
+    mode: box
+  haus_allg_vormontage_preis_eur_kwh:
+    name: "Haus – Allgemein Strom: Vormontage Preis [€/kWh]"
+    min: 0
+    max: 5
+    step: 0.001
+    unit_of_measurement: "€/kWh"
+    mode: box
+
+# ───────── Kostenrate (€/h) aus Leistung×Preis (Live) ─────────
 template:
+  - trigger:
+      - platform: state
+        entity_id:
+          - sensor.zahler_xiao_c6_s0_kanal_1_leistung_w           # WP Leistung (W)
+          - sensor.zaehler_haus_allgemein_haus_s0_kanal_1_leistung_w  # Allgemein Leistung (W)
+          - sensor.conny_strompreis                                # Preis (€/kWh)
+      - platform: time_pattern
+        seconds: "/30"
+    sensor:
+      - name: "Haus – WP Kostenrate [€/h]"
+        unique_id: haus_wp_kostenrate_eur_h
+        unit_of_measurement: "€/h"
+        icon: mdi:cash
+        state: >-
+          {% set p_w = states('sensor.zahler_xiao_c6_s0_kanal_1_leistung_w')|float(0) %}
+          {% set price = states('sensor.conny_strompreis')|float(0) %}
+          {{ ((p_w / 1000.0) * price) | round(6) }}
+
+      - name: "Haus – Allgemein Kostenrate [€/h]"
+        unique_id: haus_allg_kostenrate_eur_h
+        unit_of_measurement: "€/h"
+        icon: mdi:cash-multiple
+        state: >-
+          {% set p_w = states('sensor.zaehler_haus_allgemein_haus_s0_kanal_1_leistung_w')|float(0) %}
+          {% set price = states('sensor.conny_strompreis')|float(0) %}
+          {{ ((p_w / 1000.0) * price) | round(6) }}
+
+  # ───────── Sichtbare kWh & Kosten (inkl. Vormontage) ─────────
   - sensor:
-      - name: haus_strom_wp_kwh_gesamt
-        unique_id: haus_strom_wp_kwh_gesamt
-        device_class: energy
-        state_class: total
+      # --- WP: Verbrauch kWh (total_increasing) mit Vormontage-Offset
+      - name: "Haus – WP Strom Verbrauch [kWh]"
+        unique_id: haus_wp_strom_verbrauch_kwh
         unit_of_measurement: "kWh"
-        availability: >
-          {{ states('sensor.haus_strom_wp_kwh_year') not in ['unknown','unavailable','']
-             or states('input_number.haus_strom_wp_vormontage_kwh') not in ['unknown','unavailable',''] }}
-        state: >
-          {{ ( states('sensor.haus_strom_wp_kwh_year')|float(0)
-               + states('input_number.haus_strom_wp_vormontage_kwh')|float(0) ) | round(1) }}
-        attributes:
-          utm_entity: sensor.haus_strom_wp_kwh_year
-          vormontage_kwh: "{{ states('input_number.haus_strom_wp_vormontage_kwh') }}"
+        device_class: energy
+        state_class: total_increasing
+        state: >-
+          {{ ( states('sensor.haus_wp_strom_verbrauch_kwh_raw')|float(0)
+             + states('input_number.haus_wp_vormontage_kwh')|float(0) ) | round(3) }}
+
+      # --- WP: Vormontage-Kosten €
+      - name: "Haus – WP Strom Vormontage €"
+        unique_id: haus_wp_strom_vormontage_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash
+        state: >-
+          {{ ( states('input_number.haus_wp_vormontage_kwh')|float(0)
+             * states('input_number.haus_wp_vormontage_preis_eur_kwh')|float(0) ) | round(2) }}
+
+      # --- WP: Gesamtkosten € = Vormontage + integrierte Laufzeit-Kosten
+      - name: "Haus – WP Strom Kosten gesamt €"
+        unique_id: haus_wp_strom_kosten_gesamt_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash-multiple
+        state: >-
+          {{ ( states('sensor.haus_wp_kosten_eur_raw')|float(0)
+             + states('sensor.haus_wp_strom_vormontage_eur')|float(0) ) | round(2) }}
+
+      # --- Allgemein: Verbrauch kWh (total_increasing) mit Vormontage-Offset
+      - name: "Haus – Allgemein Strom Verbrauch [kWh]"
+        unique_id: haus_allg_strom_verbrauch_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >-
+          {{ ( states('sensor.haus_allg_strom_verbrauch_kwh_raw')|float(0)
+             + states('input_number.haus_allg_vormontage_kwh')|float(0) ) | round(3) }}
+
+      # --- Allgemein: Vormontage-Kosten €
+      - name: "Haus – Allgemein Strom Vormontage €"
+        unique_id: haus_allg_strom_vormontage_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash
+        state: >-
+          {{ ( states('input_number.haus_allg_vormontage_kwh')|float(0)
+             * states('input_number.haus_allg_vormontage_preis_eur_kwh')|float(0) ) | round(2) }}
+
+      # --- Allgemein: Gesamtkosten € = Vormontage + integrierte Laufzeit-Kosten
+      - name: "Haus – Allgemein Strom Kosten gesamt €"
+        unique_id: haus_allg_strom_kosten_gesamt_eur
+        device_class: monetary
+        unit_of_measurement: "€"
+        icon: mdi:cash-multiple
+        state: >-
+          {{ ( states('sensor.haus_allg_kosten_eur_raw')|float(0)
+             + states('sensor.haus_allg_strom_vormontage_eur')|float(0) ) | round(2) }}
+
+# ───────── Integration: Leistung (W) → Energie (kWh) ─────────
+sensor:
+  - platform: integration
+    source: sensor.zahler_xiao_c6_s0_kanal_1_leistung_w
+    name: haus_wp_strom_verbrauch_kwh_raw
+    unit_time: h
+    unit_prefix: k         # => kWh
+    method: trapezoidal
+    round: 6
+
+  - platform: integration
+    source: sensor.zaehler_haus_allgemein_haus_s0_kanal_1_leistung_w
+    name: haus_allg_strom_verbrauch_kwh_raw
+    unit_time: h
+    unit_prefix: k
+    method: trapezoidal
+    round: 6
+
+  # ───────── Integration: Kostenrate (€/h) → Kosten (€) ─────────
+  - platform: integration
+    source: sensor.haus_wp_kostenrate_eur_h
+    name: haus_wp_kosten_eur_raw
+    unit_time: h
+    unit_prefix: null
+    method: trapezoidal
+    round: 6
+
+  - platform: integration
+    source: sensor.haus_allg_kostenrate_eur_h
+    name: haus_allg_kosten_eur_raw
+    unit_time: h
+    unit_prefix: null
+    method: trapezoidal
+    round: 6
+
+# ───────── Utility Meter (optional, für periodische Summen) ─────────
+utility_meter:
+  # Kosten (€) – WP
+  haus_wp_kosten_tag:
+    source: sensor.haus_wp_kosten_eur_raw
+    cycle: daily
+  haus_wp_kosten_monat:
+    source: sensor.haus_wp_kosten_eur_raw
+    cycle: monthly
+  haus_wp_kosten_jahr:
+    source: sensor.haus_wp_kosten_eur_raw
+    cycle: yearly
+
+  # Kosten (€) – Allgemein
+  haus_allg_kosten_tag:
+    source: sensor.haus_allg_kosten_eur_raw
+    cycle: daily
+  haus_allg_kosten_monat:
+    source: sensor.haus_allg_kosten_eur_raw
+    cycle: monthly
+  haus_allg_kosten_jahr:
+    source: sensor.haus_allg_kosten_eur_raw
+    cycle: yearly
+
+  # Verbrauch (kWh) – optional
+  haus_wp_verbrauch_tag_kwh:
+    source: sensor.haus_wp_strom_verbrauch_kwh
+    cycle: daily
+  haus_wp_verbrauch_monat_kwh:
+    source: sensor.haus_wp_strom_verbrauch_kwh
+    cycle: monthly
+  haus_wp_verbrauch_jahr_kwh:
+    source: sensor.haus_wp_strom_verbrauch_kwh
+    cycle: yearly
+
+  haus_allg_verbrauch_tag_kwh:
+    source: sensor.haus_allg_strom_verbrauch_kwh
+    cycle: daily
+  haus_allg_verbrauch_monat_kwh:
+    source: sensor.haus_allg_strom_verbrauch_kwh
+    cycle: monthly
+  haus_allg_verbrauch_jahr_kwh:
+    source: sensor.haus_allg_strom_verbrauch_kwh
+    cycle: yearly
+

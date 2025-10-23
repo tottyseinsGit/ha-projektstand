@@ -1,13 +1,14 @@
-# WHG02 – Kosten aus Leistung × EPEX NET → Integration (€) → Utility Meter (Tag/Monat/Jahr)
-# Leistung (W): sensor.homeassistant_zgw16_ip_total_active_power   <-- ggf. anpassen
-# EPEX NET (€/kWh): sensor.epex_spot_data_net_price
+# WHG02 – Kosten aus Leistung × (neuer Preis) → Integration (€) → Utility Meter (Tag/Monat/Jahr)
+# Leistung (W): sensor.homeassistant_zgw16_ip_total_active_power
+# Preis (€/kWh): sensor.conny_strompreis
 
 template:
+  # A) Kostenrate in €/h (bestehend, nur Sensoren aktualisiert)
   - trigger:
       - platform: state
         entity_id:
           - sensor.homeassistant_zgw16_ip_total_active_power
-          - sensor.epex_spot_data_net_price
+          - sensor.conny_strompreis
       - platform: time_pattern
         seconds: "/30"
     sensor:
@@ -17,10 +18,22 @@ template:
         icon: mdi:currency-eur
         state: >-
           {% set p_w = states('sensor.homeassistant_zgw16_ip_total_active_power')|float(0) %}
-          {% set p_epex = states('sensor.epex_spot_data_net_price')|float(0) %}
-          {{ ((p_w / 1000.0) * p_epex) | round(6) }}
+          {% set preis_eur_kwh = states('sensor.conny_strompreis')|float(0) %}
+          {{ ((p_w / 1000.0) * preis_eur_kwh) | round(6) }}
+
+  # B) Sichtbarer kWh-Verbrauch für Energy Dashboard (neu)
+  - sensor:
+      - name: "WHG02 – Strom Verbrauch [kWh]"
+        unique_id: whg02_strom_verbrauch_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.whg02_strom_verbrauch_kwh_raw')|float(0)|round(3) }}"
+        availability: >-
+          {{ states('sensor.whg02_strom_verbrauch_kwh_raw') not in ['unknown','unavailable','', none] }}
 
 sensor:
+  # 1) Kosten aufsummieren (€) – aus Kostenrate
   - platform: integration
     source: sensor.whg02_strom_kostenrate_epex_net_eur_h
     name: whg02_strom_kosten_eur_raw_epex_net
@@ -29,7 +42,17 @@ sensor:
     method: trapezoidal
     round: 6
 
+  # 2) Energie (kWh) – aus Leistung integrieren (neu)
+  - platform: integration
+    source: sensor.homeassistant_zgw16_ip_total_active_power
+    name: whg02_strom_verbrauch_kwh_raw
+    unit_time: h      # Leistung über Stunden integrieren
+    unit_prefix: k    # => kWh
+    method: trapezoidal
+    round: 6
+
 utility_meter:
+  # Kosten-Zähler (€)
   whg02_strom_kosten_tag_epex_net:
     source: sensor.whg02_strom_kosten_eur_raw_epex_net
     cycle: daily
@@ -40,3 +63,13 @@ utility_meter:
     source: sensor.whg02_strom_kosten_eur_raw_epex_net
     cycle: yearly
 
+  # Verbrauchs-Zähler (kWh) – optional
+  whg02_strom_verbrauch_tag_kwh:
+    source: sensor.whg02_strom_verbrauch_kwh
+    cycle: daily
+  whg02_strom_verbrauch_monat_kwh:
+    source: sensor.whg02_strom_verbrauch_kwh
+    cycle: monthly
+  whg02_strom_verbrauch_jahr_kwh:
+    source: sensor.whg02_strom_verbrauch_kwh
+    cycle: yearly

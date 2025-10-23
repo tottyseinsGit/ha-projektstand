@@ -1,0 +1,116 @@
+homeassistant:
+  customize: {}
+
+# ---- GRID (Tibber) ----
+# Wenn Tibber bereits kWh liefert, diese direkt im Energy-Dashboard auswählen
+# und die folgenden "integration"-Sensoren weglassen.
+sensor:
+  # Import (W -> kWh)
+  - platform: integration
+    source: sensor.tibber_grid_import_power_w     # <--- ERSETZEN
+    name: site_grid_import_energy_kwh
+    unique_id: site_grid_import_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+  # Export (W -> kWh)
+  - platform: integration
+    source: sensor.tibber_grid_export_power_w     # <--- ERSETZEN
+    name: site_grid_export_energy_kwh
+    unique_id: site_grid_export_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+# ---- SOLAR (Fronius) ----
+# Falls Fronius keinen kWh-Sensor liefert:
+  - platform: integration
+    source: sensor.fronius_pv_power_w             # <--- ERSETZEN
+    name: site_solar_energy_kwh
+    unique_id: site_solar_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+# ---- BATTERIE (Victron) ----
+# Aus einer Batterie-Leistung (W) zwei Ströme machen: Laden/Entladen
+template:
+  - sensor:
+      - name: battery_charge_power_w
+        unique_id: battery_charge_power_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_battery_power_w')|float(0) %}  {# <--- ERSETZEN #}
+          {{ max(0, -p) }}   {# Laden = negative Leistung -> positiv #}
+
+      - name: battery_discharge_power_w
+        unique_id: battery_discharge_power_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.victron_battery_power_w')|float(0) %}  {# <--- ERSETZEN #}
+          {{ max(0, p) }}    {# Entladen = positive Leistung -> positiv #}
+
+sensor:
+  - platform: integration
+    source: sensor.battery_charge_power_w
+    name: battery_charged_energy_kwh
+    unique_id: battery_charged_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+  - platform: integration
+    source: sensor.battery_discharge_power_w
+    name: battery_discharged_energy_kwh
+    unique_id: battery_discharged_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+# ---- INDIVIDUELLE VERBRAUCHER (kWh) ----
+# Wenn du nur Leistung hast, wandle wie oben in kWh:
+  - platform: integration
+    source: sensor.ev_charger_power_w             # <--- ERSETZEN
+    name: ev_charging_energy_kwh
+    unique_id: ev_charging_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+  - platform: integration
+    source: sensor.whg02_power_w                  # <--- ERSETZEN
+    name: whg02_energy_kwh
+    unique_id: whg02_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+  - platform: integration
+    source: sensor.whg04_power_w                  # <--- ERSETZEN
+    name: whg04_energy_kwh
+    unique_id: whg04_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+  - platform: integration
+    source: sensor.hausstrom_power_w              # <--- ERSETZEN
+    name: hausstrom_energy_kwh
+    unique_id: hausstrom_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
+  - platform: integration
+    source: sensor.wp_power_w                     # <--- ERSETZEN (Wärmepumpe)
+    name: heat_pump_energy_kwh
+    unique_id: heat_pump_energy_kwh
+    unit_prefix: k
+    method: left
+    round: 3
+
